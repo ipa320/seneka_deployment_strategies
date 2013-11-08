@@ -148,6 +148,9 @@ private:
   // particle swarm
   vector<particle> particle_swarm_;
 
+  // Greedy_PSO solution
+  particle sol_particle_;
+
   // vector storing the positions global best solution of the particle swarm
   particle global_best_;
 
@@ -207,6 +210,7 @@ public:
 
   // declaration of ros publishers
   ros::Publisher marker_array_pub_;
+  ros::Publisher gPSO_sol_MA_pub_;
   ros::Publisher GS_targets_grid_pub_;
   ros::Publisher map_pub_, map_meta_pub_;
   ros::Publisher nav_path_pub_;
@@ -236,8 +240,14 @@ public:
   // function to initialize PSO-Algorithm
   void initializePSO();
 
+  // function to initialize Greedý-PSO-Algorithm
+  void initializeGreedyPSO();
+
   // function for the actual partcile-swarm-optimization
   void PSOptimize();
+
+  // function for the  particle-swarm-optimization with Greedy optimization
+  void GreedyPSOptimize();
 
   // function to get the current global best solution
   void getGlobalBest();
@@ -253,6 +263,8 @@ public:
 
   // function to run Greedy Search Algorithm
   void runGS();
+
+
 
   // function to create an offsetted polygon from area of interest
   geometry_msgs::PolygonStamped offsetAoI(double offset);

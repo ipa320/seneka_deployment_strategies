@@ -94,7 +94,8 @@ namespace seneka_utilities
     bool covered;
     // holds if the target is covered by multiple sensors
     bool multiple_covered;
-
+    // hold if the target coverage is allowed to be reset or not
+    bool no_reset;
     // function to reset the changeable information about the target
     void reset();
   };

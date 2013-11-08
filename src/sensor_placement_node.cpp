@@ -67,6 +67,7 @@ sensor_placement_node::sensor_placement_node()
   // ros publishers
   nav_path_pub_ = nh_.advertise<nav_msgs::Path>("out_path",1,true);
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1,true);
+  gPSO_sol_MA_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_gPSO_marker_array",1,true);
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1,true);
   map_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>("out_cropped_map_metadata",1,true);
   offset_AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("offset_AoI", 1,true);
@@ -260,6 +261,7 @@ bool sensor_placement_node::getTargets()
           //variable information
           dummy_target_info_var.covered = false;
           dummy_target_info_var.multiple_covered = false;
+          dummy_target_info_var.no_reset = false;
 
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
@@ -309,6 +311,7 @@ bool sensor_placement_node::getTargets()
           //variable information
           dummy_target_info_var.covered = false;
           dummy_target_info_var.multiple_covered = false;
+          dummy_target_info_var.no_reset = false;
 
           // the given position lies withhin the polygon
           if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 2)
@@ -422,10 +425,82 @@ void sensor_placement_node::initializePSO()
 }
 
 
+// function to initialize PSO-Algorithm
+void sensor_placement_node::initializeGreedyPSO()
+{
+  // initialize pointer to dummy sensor_model
+  FOV_2D_model dummy_2D_model;
+  dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
+
+  // initialize dummy particle
+  particle dummy_particle = particle(1, target_num_, dummy_2D_model);
+
+  dummy_particle.setMap(map_);
+  dummy_particle.setAreaOfInterest(area_of_interest_);
+  dummy_particle.setForbiddenAreaVec(forbidden_area_vec_);
+  dummy_particle.setOpenAngles(open_angles_);
+  dummy_particle.setRange(sensor_range_);
+  dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
+  dummy_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
+  dummy_particle.setLookupTable(& lookup_table_);
+
+  // initialize particle swarm with given number of particles containing given number of sensors -b- testing with one sensor for Greedy-PSO algo
+  particle_swarm_.assign(particle_num_,dummy_particle);
+  // initialize the global best solution
+  global_best_ = dummy_particle;
+
+  // initialize dummy particle2
+  particle dummy_particle2 = particle(sensor_num_, target_num_, dummy_2D_model);
+
+  dummy_particle2.setMap(map_);
+  dummy_particle2.setAreaOfInterest(area_of_interest_);
+  dummy_particle2.setForbiddenAreaVec(forbidden_area_vec_);
+  dummy_particle2.setOpenAngles(open_angles_);
+  dummy_particle2.setRange(sensor_range_);
+  dummy_particle2.setTargetsWithInfoVar(targets_with_info_var_);
+  dummy_particle2.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
+  dummy_particle2.setLookupTable(& lookup_table_);
+
+  // set solution particle
+  sol_particle_ = dummy_particle2;
+
+  // initialize coverage
+  double actual_coverage = 0;
+
+/*  // initialize sensors randomly on perimeter for each particle with random velocities
+  if(AoI_received_)
+  {
+    for(size_t i = 0; i < particle_swarm_.size(); i++)
+    {
+      // initialize sensor poses randomly on perimeter
+      particle_swarm_.at(i).placeSensorsRandomlyOnPerimeter();
+      // initialize sensor velocities randomly
+      particle_swarm_.at(i).initializeRandomSensorVelocities();
+      // get calculated coverage
+      actual_coverage = particle_swarm_.at(i).getActualCoverage();
+      // check if the actual coverage is a new global best
+      if(actual_coverage > best_cov_)
+      {
+        best_cov_ = actual_coverage;
+        global_best_ = particle_swarm_.at(i);
+      }
+    }
+    // after the initialization step we're looking for a new global best solution
+    getGlobalBest();
+
+    // publish the actual global best visualization
+    marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+  }
+*/
+
+}
+
+
 
 // function for the actual particle-swarm-optimization
 void sensor_placement_node::PSOptimize()
 {
+
   //clock_t t_start;
   //clock_t t_end;
   //double  t_diff;
@@ -467,6 +542,112 @@ void sensor_placement_node::PSOptimize()
     // increment PSO-iterator
     iter++;
   }
+
+}
+
+
+// function for the  particle-swarm-optimization with Greedy optimization
+void sensor_placement_node::GreedyPSOptimize()
+{
+  //varialbles
+  double actual_coverage = 0;
+
+  std::vector< FOV_2D_model > sol_sensor_vec;
+
+
+  //clock_t t_start;
+  //clock_t t_end;
+  //double  t_diff;
+
+  // PSO-iterator
+  int iter = 0;
+  std::vector<geometry_msgs::Pose> global_pose;
+
+  //number of iterations = num of sensors
+  for (unsigned int update_sensor_ind = 0; update_sensor_ind<sensor_num_; update_sensor_ind++)
+  {
+
+    iter=0;
+    best_cov_=0;
+
+    // place sensors randomly on perimeter for each particle with random velocities
+    if(AoI_received_)
+    {
+      for(size_t i = 0; i < particle_swarm_.size(); i++)
+      {
+        // initialize sensor poses randomly on perimeter
+        particle_swarm_.at(i).placeSensorsRandomlyOnPerimeter();
+        // initialize sensor velocities randomly
+        particle_swarm_.at(i).initializeRandomSensorVelocities();
+        // get calculated coverage
+        actual_coverage = particle_swarm_.at(i).getActualCoverage();
+        // check if the actual coverage is a new global best
+        if(actual_coverage > best_cov_)
+        {
+          best_cov_ = actual_coverage;
+          global_best_ = particle_swarm_.at(i);
+        }
+      }
+      // after the initialization step we're looking for a new global best solution
+      getGlobalBest();
+
+      // publish the actual global best visualization
+      marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+    }
+
+
+    // iteration step
+    // continue calculation as long as there are iteration steps left and actual best coverage is
+    // lower than mininmal coverage to stop
+    while(iter < 20 && best_cov_ < min_cov_)
+    {
+      global_pose = global_best_.getSolutionPositions();
+      // update each particle in vector
+      for(size_t i=0; i < particle_swarm_.size(); i++)
+      {
+        //t_start = clock();
+        particle_swarm_.at(i).resetTargetsWithInfoVar2();   //-b- TODO: RESET multiple coverage and covered by sensor info always!
+        //t_end = clock();
+        //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+        //ROS_INFO( "reset: %10.10f \n", t_diff);
+
+        // now we're ready to update the particle
+        //t_start = clock();
+        particle_swarm_.at(i).updateParticle2(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
+        //t_end = clock();
+        //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+        //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
+      }
+      // after the update step we're looking for a new global best solution
+      getGlobalBest();
+
+      // publish the actual global best visualization
+      marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+
+      ROS_INFO_STREAM("iteration: " << iter << " with coverage: " << best_cov_);
+
+      // increment PSO-iterator
+      iter++;
+    }
+    //get solution sensor
+    sol_sensor_vec = global_best_.getActualSolution();  //sol_sensor_vec has only one element -b-
+    // save it into solution particle
+    sol_particle_.setSolutionSensors(sol_sensor_vec.at(0));
+    //publish solution particle
+    gPSO_sol_MA_pub_.publish(sol_particle_.getsolVisualizationMarkers());
+
+    //hardcode the coverage by global best
+    global_best_.updateTargetsInfoRaytracing_withlock(0, true);
+    //set valid targets for whole particle swarm
+    global_best_.resetTargetsWithInfoVar2();
+    for(size_t i = 0; i < particle_swarm_.size(); i++)
+    {
+      particle_swarm_.at(i).setTargetsWithInfoVar(targets_with_info_var_);
+    }
+  }
+
+
+
 
 }
 
@@ -557,13 +738,13 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 
 
   ROS_INFO("Initializing particle swarm");
-  initializePSO();
+  initializeGreedyPSO();
 
   // publish global best visualization
   marker_array_pub_.publish(global_best_.getVisualizationMarkers());
 
   ROS_INFO("Particle swarm Optimization step");
-  PSOptimize();
+  GreedyPSOptimize();
 
   // get the PSO result as nav_msgs::Path in UTM coordinates and publish it
   PSO_result_ = particle_swarm_.at(best_particle_index_).particle::getSolutionPositionsAsPath();

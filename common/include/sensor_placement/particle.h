@@ -88,6 +88,9 @@ private:
   // std-vector storing the sensors
   std::vector< FOV_2D_model > sensors_;
 
+  // std-vector storing the sensors
+  std::vector< FOV_2D_model > sol_sensors_;
+
   // std-vector storing the personal best solution of the particle
   std::vector< FOV_2D_model > pers_best_;
 
@@ -162,6 +165,9 @@ public:
 
   // ************************ setter functions ************************
 
+  // function to set solution
+  void setSolutionSensors(FOV_2D_model sol_sensor);
+
   // function that sets the member variable sensor_num_ and reserves capacity for vector sensors_
   void setSensorNum(int num_of_sensors);
 
@@ -173,6 +179,9 @@ public:
 
   // function to reset the variable information for all targets
   void resetTargetsWithInfoVar();
+
+  // function to reset the variable information for all targets
+  void resetTargetsWithInfoVar2();
 
   // function that sets the map
   void setMap(const nav_msgs::OccupancyGrid & new_map);
@@ -210,11 +219,17 @@ public:
   // function to update particle during PSO
   void updateParticle(std::vector<geometry_msgs::Pose> global_best, double PSO_param_1, double PSO_param_2, double PSO_param_3);
 
+  // function to update particle during PSO
+  void updateParticle2(std::vector<geometry_msgs::Pose> global_best, double PSO_param_1, double PSO_param_2, double PSO_param_3);
+
   // function to update the targets_with_info variable
   void updateTargetsInfo(size_t sensor_index);
 
   //function to update the targets_with_info variable with raytracing (lookup table)
   void updateTargetsInfoRaytracing(size_t sensor_index);
+
+  //function to update the targets_with_info variable with raytracing (lookup table); with option to save no reset info for covered targets
+  void updateTargetsInfoRaytracing_withlock(size_t sensor_index, bool lock_targets);
 
   // function to calculate the actual  and personal best coverage
   void calcCoverage();
@@ -246,6 +261,9 @@ public:
 
   // returns all visualization markers of the particle
   visualization_msgs::MarkerArray getVisualizationMarkers();
+
+  // returns all visualization markers of the particle
+  visualization_msgs::MarkerArray getsolVisualizationMarkers();
 };
 
 #endif
