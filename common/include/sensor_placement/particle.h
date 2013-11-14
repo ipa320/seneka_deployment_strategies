@@ -168,6 +168,9 @@ public:
   // function to get targets_info_var
   std::vector<target_info_var> getTargetsWithInfoVar();
 
+  // function to get number of targets covered after call to updateTargetsInfoRaytracing_withlock
+  unsigned int getNumOfTargetsCovered();
+
 
   // ************************ setter functions ************************
 
@@ -217,7 +220,7 @@ public:
   void initializeSensorsOnPerimeter();
 
   // function to initialize given sensor on the perimeter
-  void initializeSensorOnPerimeter(unsigned int sensor_index);
+  void initializeOneSensorOnPerimeter(unsigned int sensor_index);
 
   // function to place all sensors at a given pose
   void placeSensorsAtPos(geometry_msgs::Pose new_pose);

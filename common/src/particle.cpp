@@ -196,7 +196,11 @@ std::vector<target_info_var> particle::getTargetsWithInfoVar()
   return targets_with_info_var_;
 }
 
-
+// function to get number of targets covered after call to updateTargetsInfoRaytracing_withlock
+unsigned int particle::getNumOfTargetsCovered()
+{
+  return gPSO_covered_targets_num_;
+}
 
 // function that sets the member varialbe sensor_um_ and reserves capacity for vector sensors_
 void particle::setSensorNum(int num_of_sensors)
@@ -215,7 +219,7 @@ void particle::setSensorNum(int num_of_sensors)
 // function to set solution
 void particle::setSolutionSensors(FOV_2D_model sol_sensor)
 {
-  sol_sensors_.push_back(sol_sensor); // -b-
+  sol_sensors_.push_back(sol_sensor);
 }
 
 // function to set the fix information for all targets
@@ -528,7 +532,7 @@ void particle::initializeSensorsOnPerimeter()
 
 
 // function to initialize sensor on the perimeter according to sensor_index
-void particle::initializeSensorOnPerimeter(unsigned int sensor_index)
+void particle::initializeOneSensorOnPerimeter(unsigned int sensor_index)
 {
   // initialize workspace
   bool pose_accepted=false;
@@ -1351,7 +1355,6 @@ void particle::updateTargetsInfoRaytracing_withlock(size_t sensor_index, bool lo
               if (lock_targets==true)
               {
                 targets_with_info_var_.at(cell_in_vector_coordinates).no_reset=true;
-                //ROS_INFO("locking targets");  //-b-
                 gPSO_covered_targets_num_++;
               }
 
@@ -1447,9 +1450,7 @@ void particle::updateTargetsInfoRaytracing_withlock(size_t sensor_index, bool lo
       ray++;
     }
   }
-  ROS_INFO_STREAM("targets covered by GreedyPSO algorithm"<< gPSO_covered_targets_num_);
 }
-
 
 // function to calculate the actual and personal best coverage
 void particle::calcCoverage()
