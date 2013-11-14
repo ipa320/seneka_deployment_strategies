@@ -576,7 +576,7 @@ void sensor_placement_node::GreedyPSOptimize()
       for(size_t i = 0; i < particle_swarm_.size(); i++)
       {
         // initialize sensor poses randomly on perimeter
-        particle_swarm_.at(i).placeSensorsRandomlyOnPerimeter();
+        particle_swarm_.at(i).initializeSensorOnPerimeter(update_sensor_ind);
         // initialize sensor velocities randomly
         particle_swarm_.at(i).initializeRandomSensorVelocities();
         // get calculated coverage
@@ -599,7 +599,7 @@ void sensor_placement_node::GreedyPSOptimize()
     // iteration step
     // continue calculation as long as there are iteration steps left and actual best coverage is
     // lower than mininmal coverage to stop
-    while(iter < 20 && best_cov_ < min_cov_)
+    while(iter < 3 && best_cov_ < min_cov_)
     {
       global_pose = global_best_.getSolutionPositions();
       // update each particle in vector
@@ -636,10 +636,12 @@ void sensor_placement_node::GreedyPSOptimize()
     //publish solution particle
     gPSO_sol_MA_pub_.publish(sol_particle_.getsolVisualizationMarkers());
 
+    global_best_.resetTargetsWithInfoVar2();
+
     //hardcode the coverage by global best
     global_best_.updateTargetsInfoRaytracing_withlock(0, true);
     //set valid targets for whole particle swarm
-    global_best_.resetTargetsWithInfoVar2();
+
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
       particle_swarm_.at(i).setTargetsWithInfoVar(targets_with_info_var_);
@@ -677,6 +679,104 @@ void sensor_placement_node::getGlobalBest()
     }
   }
 }
+
+
+/*
+// callback function for the start PSO service
+bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+  // call static_map-service from map_server to get the actual map
+  sc_get_map_.waitForExistence();
+
+  nav_msgs::GetMap srv_map;
+
+  if(sc_get_map_.call(srv_map))
+  {
+    ROS_INFO("Map service called successfully");
+    map_received_ = true;
+
+    if(AoI_received_)
+    {
+      // get bounding box of area of interest
+      geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
+      // cropMap to boundingBox
+      cropMap(bound_box, srv_map.response.map, map_);
+    }
+    else
+    {
+      map_ = srv_map.response.map;
+
+      // if no AoI was specified, we consider the whole map to be the AoI
+      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
+    }
+
+    // publish map
+    map_.header.stamp = ros::Time::now();
+    map_pub_.publish(map_);
+    map_meta_pub_.publish(map_.info);
+  }
+  else
+  {
+    ROS_INFO("Failed to call map service");
+  }
+
+  if(map_received_)
+  {
+    ROS_INFO("Received a map");
+
+    // now create the lookup table based on the range of the sensor and the resolution of the map
+    int radius_in_cells = floor(sensor_range_ / map_.info.resolution);
+    lookup_table_ = createLookupTableCircle(radius_in_cells);
+  }
+
+  ROS_INFO("getting targets from specified map and area of interest!");
+
+  targets_saved_ = getTargets();
+
+  if(targets_saved_)
+  {
+    ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
+
+    ROS_INFO_STREAM("Saved " << targets_with_info_fix_.size() << " targets with info in std-vectors");
+  }
+
+
+  ROS_INFO("Initializing particle swarm");
+  initializePSO();
+
+  // publish global best visualization
+  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+
+  ROS_INFO("Particle swarm Optimization step");
+  PSOptimize();
+
+  // get the PSO result as nav_msgs::Path in UTM coordinates and publish it
+  PSO_result_ = particle_swarm_.at(best_particle_index_).particle::getSolutionPositionsAsPath();
+
+  nav_path_pub_.publish(PSO_result_);
+
+  ROS_INFO_STREAM("Print the best solution as Path: " << PSO_result_);
+
+  // publish global best visualization
+  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+
+  ROS_INFO("Clean up everything");
+  particle_swarm_.clear();
+
+  targets_with_info_fix_.clear();
+  targets_with_info_var_.clear();
+
+  target_num_ = 0;
+  best_cov_ = 0;
+  best_particle_index_ = 0;
+
+  ROS_INFO("PSO terminated successfully");
+
+  return true;
+
+}
+
+*/
 
 // callback function for the start PSO service
 bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)

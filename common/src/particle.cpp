@@ -95,8 +95,8 @@ particle::particle(int num_of_sensors, int num_of_targets, FOV_2D_model sensor_m
   multiple_coverage_ = 0;
   pers_best_multiple_coverage_ = 0;
 
-  // intialize sensor for search. (-b-) for test phase, the vector is kept to avoid changes the particle class functions,
-  sensors_.assign(1, sensor_model);
+// initialize sensor vector with as many entries as specified by sensors_num_
+  sensors_.assign(sensor_num_, sensor_model);
 
   // initialize solution sensor vector with as many entries as specified by sensors_num_
   //sol_sensors_.assign(sensor_num_, sensor_model);
@@ -502,6 +502,132 @@ void particle::initializeSensorsOnPerimeter()
     // update the target information
     updateTargetsInfoRaytracing(i);
   }
+  // calculate new coverage
+  calcCoverage();
+  if(coverage_ == 0)
+  {
+    pers_best_coverage_ = coverage_;
+    pers_best_multiple_coverage_ = multiple_coverage_;
+    pers_best_ = sensors_;
+  }
+}
+
+
+// function to initialize sensor on the perimeter according to sensor_index
+void particle::initializeSensorOnPerimeter(unsigned int sensor_index)
+{
+  // initialize workspace
+  bool pose_accepted=false;
+  size_t edge_ind = 0;
+  size_t successor = 0;
+  double t = 0;
+  double alpha = 0;
+  unsigned int cell_in_vector_coordinates = 0;
+  geometry_msgs::Pose newPose;
+  geometry_msgs::Vector3 vec_sensor_dir;
+
+  // get bounding box of area of interest
+  geometry_msgs::Polygon bound_box = getBoundingBox2D(pArea_of_interest_->polygon, *pMap_);
+  double x_min = bound_box.points.at(0).x;
+  double y_min = bound_box.points.at(0).y;
+
+  double x_max = bound_box.points.at(2).x;
+  double y_max = bound_box.points.at(2).y;
+
+  // get center of the area of interest
+  geometry_msgs::Point32 polygon_center = geometry_msgs::Point32();
+
+  polygon_center.x = (double) x_min + (x_max - x_min)/2;
+  polygon_center.y = (double) y_min + (y_max - y_min)/2;
+
+//  for(size_t i = 0; i < sensors_.size(); i++)
+// {
+    if(sensor_index < pArea_of_interest_->polygon.points.size())
+    {
+      cell_in_vector_coordinates =
+        worldToMapY(pArea_of_interest_->polygon.points.at(sensor_index).y, *pMap_) * pMap_->info.width
+        + worldToMapX(pArea_of_interest_->polygon.points.at(sensor_index).x, *pMap_);
+    }
+
+    if(sensor_index < pArea_of_interest_->polygon.points.size() &&
+       (!pTargets_with_info_fix_->at(cell_in_vector_coordinates).forbidden) &&
+       (!pTargets_with_info_fix_->at(cell_in_vector_coordinates).occupied) &&
+       (pTargets_with_info_fix_->at(cell_in_vector_coordinates).map_data > -1) )
+    {
+      // set new sensor pose as one of the corners of the area of interest if not in forbidden area
+      // only set new position if the cell is not occupied and not unknoown, otherwise skip this corner
+      newPose.position.x = mapToWorldX(worldToMapX(pArea_of_interest_->polygon.points.at(sensor_index).x, *pMap_), *pMap_);
+      newPose.position.y = mapToWorldY(worldToMapY(pArea_of_interest_->polygon.points.at(sensor_index).y, *pMap_), *pMap_);
+      newPose.position.z = 0;
+
+      vec_sensor_dir.x = polygon_center.x - newPose.position.x;
+      vec_sensor_dir.y = polygon_center.y - newPose.position.y;
+      vec_sensor_dir.z = 0;
+
+      // get angle between desired sensor facing direction and x-axis
+      alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
+
+      if(vec_sensor_dir.y < 0)
+        alpha = -alpha;
+
+      // get quaternion message for desired sensor facing direction
+      newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
+
+      // set new sensor pose
+      sensors_.at(0).setSensorPose(newPose);
+
+    }
+    else
+    {
+      do
+      {
+        // get index of a random edge of the area of interest specified by a polygon
+        edge_ind = (int) randomNumber(0, pArea_of_interest_->polygon.points.size());
+        successor = 0;
+
+        if(edge_ind < (pArea_of_interest_->polygon.points.size() - 1))
+          successor = edge_ind++;
+
+        t = randomNumber(0,1);
+
+        // get random Pose on perimeter of the area of interest specified by a polygon
+        newPose.position.x = mapToWorldX(worldToMapX(pArea_of_interest_->polygon.points.at(edge_ind).x
+                              + t * (pArea_of_interest_->polygon.points.at(successor).x - pArea_of_interest_->polygon.points.at(edge_ind).x), *pMap_), *pMap_);
+        newPose.position.y = mapToWorldY(worldToMapY(pArea_of_interest_->polygon.points.at(edge_ind).y
+                              + t * (pArea_of_interest_->polygon.points.at(successor).y - pArea_of_interest_->polygon.points.at(edge_ind).y), *pMap_), *pMap_);
+        newPose.position.z = 0;
+
+        vec_sensor_dir.x = polygon_center.x - newPose.position.x;
+        vec_sensor_dir.y = polygon_center.y - newPose.position.y;
+        vec_sensor_dir.z = 0;
+
+        // get angle between desired sensor facing direction and x-axis
+        alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
+
+        if(vec_sensor_dir.y < 0)
+          alpha = -alpha;
+
+        // get quaternion message for desired sensor facing direction
+        newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
+
+        cell_in_vector_coordinates = worldToMapY(newPose.position.y, *pMap_) * pMap_->info.width + worldToMapX(newPose.position.x, *pMap_);
+
+        if( !pTargets_with_info_fix_->at(cell_in_vector_coordinates).forbidden)
+        {
+          //found a point which is not in the forbidden area
+          sensors_.at(0).setSensorPose(newPose);
+          pose_accepted=true;
+        }
+        else
+        {
+          //given point lies in forbidden area
+          pose_accepted=false;
+        }
+      }while(!pose_accepted); //keep looking until a point is found which is outside the forbidden area
+    }
+    // update the target information
+    updateTargetsInfoRaytracing(0);
+// }
   // calculate new coverage
   calcCoverage();
   if(coverage_ == 0)
@@ -1210,6 +1336,8 @@ void particle::updateTargetsInfoRaytracing_withlock(size_t sensor_index, bool lo
               if (lock_targets==true)
               {
                 targets_with_info_var_.at(cell_in_vector_coordinates).no_reset=true;
+                ROS_INFO("locking targets");  //-b-
+                //actual_covered_targets_num_++;
               }
 
               // increment the covered targets counter only if the given target is not covered by another sensor yet
