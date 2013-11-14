@@ -568,7 +568,7 @@ void sensor_placement_node::GreedyPSOptimize()
   {
 
     iter=0;
-    //best_cov_=0; ??
+    best_cov_=0;
 
     // place sensors randomly on perimeter for each particle with random velocities
     if(AoI_received_)
@@ -599,7 +599,7 @@ void sensor_placement_node::GreedyPSOptimize()
     // iteration step
     // continue calculation as long as there are iteration steps left and actual best coverage is
     // lower than mininmal coverage to stop
-    while(iter < 1 && best_cov_ < min_cov_)
+    while(iter < 20 && best_cov_ < min_cov_)
     {
       global_pose = global_best_.getSolutionPositions();
       // update each particle in vector
@@ -645,7 +645,7 @@ void sensor_placement_node::GreedyPSOptimize()
 
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
-      particle_swarm_.at(i).setTargetsWithInfoVar(targets_with_info_var_);
+      particle_swarm_.at(i).setTargetsWithInfoVar(global_best_.getTargetsWithInfoVar());
     }
   }
 

@@ -63,6 +63,9 @@ particle::particle()
   // intialize coverage
   coverage_ = 0;
 
+  // initialize coverage for GreedyPSO
+  gPSO_covered_targets_num_ = 0;
+
   // initialize personal best coverage
   pers_best_coverage_ = 0;
 
@@ -87,6 +90,9 @@ particle::particle(int num_of_sensors, int num_of_targets, FOV_2D_model sensor_m
 
   // intialize coverage
   coverage_ = 0;
+
+  // initialize coverage for GreedyPSO
+  gPSO_covered_targets_num_ = 0;
 
   // initialize personal best coverage
   pers_best_coverage_ = 0;
@@ -184,6 +190,14 @@ int particle::getMultipleCoverageIndex()
   return multiple_coverage_;
 }
 
+// function to get targets_info_var
+std::vector<target_info_var> particle::getTargetsWithInfoVar()
+{
+  return targets_with_info_var_;
+}
+
+
+
 // function that sets the member varialbe sensor_um_ and reserves capacity for vector sensors_
 void particle::setSensorNum(int num_of_sensors)
 {
@@ -240,10 +254,6 @@ void particle::resetTargetsWithInfoVar2()
   {
     if (targets_with_info_var_.at(i).no_reset==false)
       targets_with_info_var_.at(i).reset();
-    else
-    {
-      ROS_INFO("skipping reset for locked target");
-    }
   }
 
   covered_targets_num_ = 0;
@@ -1167,7 +1177,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
             }
             else
             {
-              ROS_INFO_STREAM("found already covered target at "<< cell_in_vector_coordinates);
+        //     ROS_INFO_STREAM("found already covered target at "<< cell_in_vector_coordinates);
               if(targets_with_info_var_.at(cell_in_vector_coordinates).multiple_covered == false)
               {
                 // now the given target is covered by multiple sensors
@@ -1341,8 +1351,8 @@ void particle::updateTargetsInfoRaytracing_withlock(size_t sensor_index, bool lo
               if (lock_targets==true)
               {
                 targets_with_info_var_.at(cell_in_vector_coordinates).no_reset=true;
-                ROS_INFO("locking targets");  //-b-
-                //actual_covered_targets_num_++;
+                //ROS_INFO("locking targets");  //-b-
+                gPSO_covered_targets_num_++;
               }
 
               // increment the covered targets counter only if the given target is not covered by another sensor yet
@@ -1437,6 +1447,7 @@ void particle::updateTargetsInfoRaytracing_withlock(size_t sensor_index, bool lo
       ray++;
     }
   }
+  ROS_INFO_STREAM("targets covered by GreedyPSO algorithm"<< gPSO_covered_targets_num_);
 }
 
 

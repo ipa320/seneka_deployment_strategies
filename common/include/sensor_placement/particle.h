@@ -105,6 +105,9 @@ private:
   int target_num_;
   int covered_targets_num_;
 
+  // covered targets by GreedyPSO
+  int gPSO_covered_targets_num_;
+
   // actual coverage
   double coverage_;
 
@@ -161,6 +164,9 @@ public:
 
   // function to get multiple coverage index
   int getMultipleCoverageIndex();
+
+  // function to get targets_info_var
+  std::vector<target_info_var> getTargetsWithInfoVar();
 
 
   // ************************ setter functions ************************
