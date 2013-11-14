@@ -238,8 +238,12 @@ void particle::resetTargetsWithInfoVar2()
 {
   for(int i=0; i<targets_with_info_var_.size(); i++)
   {
-    if (!targets_with_info_var_.at(i).no_reset)
+    if (targets_with_info_var_.at(i).no_reset==false)
       targets_with_info_var_.at(i).reset();
+    else
+    {
+      ROS_INFO("skipping reset for locked target");
+    }
   }
 
   covered_targets_num_ = 0;
@@ -1163,6 +1167,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
             }
             else
             {
+              ROS_INFO_STREAM("found already covered target at "<< cell_in_vector_coordinates);
               if(targets_with_info_var_.at(cell_in_vector_coordinates).multiple_covered == false)
               {
                 // now the given target is covered by multiple sensors

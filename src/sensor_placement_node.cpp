@@ -568,7 +568,7 @@ void sensor_placement_node::GreedyPSOptimize()
   {
 
     iter=0;
-    best_cov_=0;
+    //best_cov_=0; ??
 
     // place sensors randomly on perimeter for each particle with random velocities
     if(AoI_received_)
@@ -599,7 +599,7 @@ void sensor_placement_node::GreedyPSOptimize()
     // iteration step
     // continue calculation as long as there are iteration steps left and actual best coverage is
     // lower than mininmal coverage to stop
-    while(iter < 3 && best_cov_ < min_cov_)
+    while(iter < 1 && best_cov_ < min_cov_)
     {
       global_pose = global_best_.getSolutionPositions();
       // update each particle in vector
@@ -636,11 +636,12 @@ void sensor_placement_node::GreedyPSOptimize()
     //publish solution particle
     gPSO_sol_MA_pub_.publish(sol_particle_.getsolVisualizationMarkers());
 
-    global_best_.resetTargetsWithInfoVar2();
-
     //hardcode the coverage by global best
+    //first reset targets
+    global_best_.resetTargetsWithInfoVar2();
+    //now lock targets that the global best is covering
     global_best_.updateTargetsInfoRaytracing_withlock(0, true);
-    //set valid targets for whole particle swarm
+    //set updated targets for whole particle swarm
 
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
