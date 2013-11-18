@@ -255,6 +255,9 @@ public:
   // function to check if the new sensor orientation is accepted
   bool newOrientationAccepted(size_t sensor_index, geometry_msgs::Pose new_pose_candidate);
 
+  // function to update the original sensors vector; to show solution as path after GreedyPSO optimization step
+  void updateOrigSensorsVec();
+
   // ************************* help functions *************************
 
   // helper function to find an uncovered target far away from a given sensor position

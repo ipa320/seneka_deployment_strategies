@@ -1589,6 +1589,18 @@ bool particle::newOrientationAccepted(size_t sensor_index, geometry_msgs::Pose n
   return result;
 }
 
+// function to update the original sensors vector; to show solution as path after GreedyPSO optimization step
+void particle::updateOrigSensorsVec()
+{
+  if(!sol_sensors_.empty())
+  {
+    sensors_ = sol_sensors_;
+  }
+  else
+    ROS_ERROR("sol_sensors_ vector is empty. updating sensors_ vector failed!");
+
+}
+
 // helper function to find an uncovered target far away from a given sensor position
 // the return value is the index of that uncovered target
 unsigned int particle::findFarthestUncoveredTarget(size_t sensor_index)

@@ -992,8 +992,6 @@ void sensor_placement_node::GreedyPSOptimize()
   //define maximum sensor coverage parameter -b-
   double max_sensor_cov = 0.08;
 
-  std::vector< FOV_2D_model > sol_sensor_vec;
-
 
   //clock_t t_start;
   //clock_t t_end;
@@ -1046,7 +1044,7 @@ void sensor_placement_node::GreedyPSOptimize()
       for(size_t i=0; i < particle_swarm_.size(); i++)
       {
         //t_start = clock();
-        particle_swarm_.at(i).resetTargetsWithInfoVar2();   //-b- NOTE: for locked targets keeping: covered, multiple coverage and covered by sensor info intact
+        particle_swarm_.at(i).resetTargetsWithInfoVar2();   //-b- NOTE: for locked targets: covered, multiple coverage and covered_by_sensor info is kept intact
         //t_end = clock();
         //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
         //ROS_INFO( "reset: %10.10f \n", t_diff);
@@ -1069,17 +1067,15 @@ void sensor_placement_node::GreedyPSOptimize()
       // increment PSO-iterator
       iter++;
     }
-    //get solution sensor
-    sol_sensor_vec = global_best_.getActualSolution();  //NOTE: global_best_ particle has only one sensor -b-
-    //save it into solution particle
-    sol_particle_.setSolutionSensors(sol_sensor_vec.at(0));
+    //save the found solution into solution particle
+    sol_particle_.setSolutionSensors(global_best_.getActualSolution().at(0));  //NOTE: global_best_ particle has only one sensor -b-
     //publish solution particle
     gPSO_sol_MA_pub_.publish(sol_particle_.getsolVisualizationMarkers());
     //hardcode the coverage by global best particle, first reset targets
     global_best_.resetTargetsWithInfoVar2();
     //now lock targets that the global best is covering
     global_best_.updateTargetsInfoRaytracing_withlock(0, true);
-    //get total coverage by GreedyPSO
+    //calculate and print total coverage by GreedyPSO
     printTotalGreedyPSOCoverage(global_best_.getNumOfTargetsCovered());
     //set updated targets for whole particle swarm
     for(size_t i = 0; i < particle_swarm_.size(); i++)
@@ -1312,6 +1308,9 @@ bool sensor_placement_node::startGreedyPSOCallback(std_srvs::Empty::Request& req
 
   ROS_INFO("Greedy Particle swarm Optimization step");
   GreedyPSOptimize();
+
+  //optimization completed, now update original sensors vector to get solution as path
+  sol_particle_.updateOrigSensorsVec();
 
   // get the PSO result as nav_msgs::Path in UTM coordinates and publish it
   PSO_result_ = sol_particle_.particle::getSolutionPositionsAsPath();
