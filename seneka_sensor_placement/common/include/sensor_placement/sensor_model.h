@@ -8,8 +8,8 @@
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
  * Project name: SeNeKa
- * ROS stack name: seneka
- * ROS package name: sensor_placement
+ * ROS stack name: seneka_deployment_strategies
+ * ROS package name: seneka_sensor_placement
  *                
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *      
