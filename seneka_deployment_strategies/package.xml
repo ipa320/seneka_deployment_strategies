@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package>
+  <name>seneka_deployment_strategies</name>
+  <version>0.0.0</version>
+  <description>The seneka_deployment_stratgies metapackage contains all packages providing stratgies for deploying sensor and tools helping to do so which are developed at Fraunhofer IPA in the SENEKA project.</description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per tag --> 
+  <maintainer email="mig@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
+  <maintainer email="frm@ipa.fraunhofer.de">Florian Mirus</maintainer>
+
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <license>LGPL</license>
+
+  <!-- Author tags are optional, mutiple are allowed, one per tag -->
+  <!-- Authors do not have to be maintianers, but could be -->
+  <author email="mig@ipa.fraunhofer.de">Matthias Gruhler</author>
+  <author email="frm@ipa.fraunhofer.de">Florian Mirus</author>  
+
+
+  <!-- The *_depend tags are used to specify dependencies -->
+  <!-- Dependencies can be catkin packages or system dependencies -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>seneka_environments</run_depend>
+  <run_depend>seneka_sensor_placement</run_depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <metapackage/>
+  </export>
+</package>

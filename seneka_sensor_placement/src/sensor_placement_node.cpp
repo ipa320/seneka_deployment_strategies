@@ -8,8 +8,8 @@
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
  * Project name: SeNeKa
- * ROS stack name: seneka
- * ROS package name: sensor_placement
+ * ROS stack name: seneka_deployment_strategies
+ * ROS package name: seneka_sensor_placement
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
@@ -82,7 +82,6 @@ sensor_placement_node::sensor_placement_node()
   ss_start_GS_with_offset_ = nh_.advertiseService("StartGS_with_offset_polygon", &sensor_placement_node::startGSCallback2, this);
   ss_clear_fa_vec_ = nh_.advertiseService("ClearForbiddenAreas", &sensor_placement_node::clearFACallback, this);
   ss_test_ = nh_.advertiseService("TestService", &sensor_placement_node::testServiceCallback, this);
-
   // ros service clients
   sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>("static_map");
 

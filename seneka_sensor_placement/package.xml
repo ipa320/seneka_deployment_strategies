@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>sensor_placement</name>
+  <name>seneka_sensor_placement</name>
   <version>0.0.0</version>
-  <description>The sensor_placement package holds code for optimal sensor placement algorithms with particle swarm optimization for the SENEKA project at Fraunhofer IPA.</description>
+  <description>The seneka_sensor_placement package holds code for optimal sensor placement algorithms with particle swarm optimization for the SENEKA project at Fraunhofer IPA.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <maintainer email="mig@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
