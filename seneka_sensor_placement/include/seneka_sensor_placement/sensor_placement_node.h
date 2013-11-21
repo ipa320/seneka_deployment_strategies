@@ -81,7 +81,7 @@
 #include <seneka_utilities.h>
 #include <greedySearch.h>
 #include <clipper.hpp>
-#include <sensor_placement/polygon_offset.h>
+#include <seneka_sensor_placement/polygon_offset.h>
 
 using namespace std;
 using namespace seneka_utilities;
@@ -265,6 +265,10 @@ public:
   // function to get the current global best solution
   void getGlobalBest();
 
+
+  // get greedy search targets also taking care of offset polygon
+  bool getGSTargets2();
+
   // function to print total coverage by GreedyPSO
   void printTotalGreedyPSOCoverage(unsigned int covered_targets_num);
 
@@ -290,7 +294,7 @@ public:
   bool startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
   // callback function for the start GS service with offset parameter
-  bool startGSCallback2(sensor_placement::polygon_offset::Request& req, sensor_placement::polygon_offset::Response& res);
+  bool startGSCallback2(seneka_sensor_placement::polygon_offset::Request& req, seneka_sensor_placement::polygon_offset::Response& res);
 
   // callback function for clearing all forbidden areas
   bool clearFACallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
