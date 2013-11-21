@@ -54,8 +54,8 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 include_directories(
-  include/sensor_placement
-  common/include/sensor_placement
+  include/seneka_sensor_placement
+  common/include/seneka_sensor_placement
   third_party/clipper_library/include/clipper
   ${catkin_INCLUDE_DIRS}
 )
