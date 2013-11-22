@@ -92,7 +92,11 @@ Visualization Manager:
       Marker Topic: /out_gPSO_marker_array
       Name: Greedy_PSO_sol
       Namespaces:
-        {}
+        camera0: true
+        camera1: true
+        camera2: true
+        camera3: true
+        camera4: true
       Queue Size: 100
       Value: true
   Enabled: true

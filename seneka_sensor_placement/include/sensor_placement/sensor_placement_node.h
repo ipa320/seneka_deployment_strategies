@@ -213,7 +213,7 @@ public:
 
   // declaration of ros publishers
   ros::Publisher marker_array_pub_;
-  ros::Publisher gPSO_sol_MA_pub_;
+//  ros::Publisher gPSO_sol_MA_pub_;
   ros::Publisher GS_targets_grid_pub_;
   ros::Publisher map_pub_, map_meta_pub_;
   ros::Publisher nav_path_pub_;
@@ -290,7 +290,7 @@ public:
   bool startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
   // callback function for the start GS service with offset parameter
-  bool startGSCallback2(sensor_placement::polygon_offset::Request& req, sensor_placement::polygon_offset::Response& res);
+  bool startGSWithOffsetCallback(sensor_placement::polygon_offset::Request& req, sensor_placement::polygon_offset::Response& res);
 
   // callback function for clearing all forbidden areas
   bool clearFACallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);

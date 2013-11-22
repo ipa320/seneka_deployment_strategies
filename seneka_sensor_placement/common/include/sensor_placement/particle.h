@@ -168,7 +168,7 @@ public:
   // function to get targets_info_var
   std::vector<target_info_var> getTargetsWithInfoVar();
 
-  // function to get number of targets covered after call to updateTargetsInfoRaytracing_withlock
+  // function to get number of targets covered after locking targets by updateTargetsInfoRaytracing() function
   unsigned int getNumOfTargetsCovered();
 
 
@@ -188,9 +188,6 @@ public:
 
   // function to reset the variable information for all targets
   void resetTargetsWithInfoVar();
-
-  // function to reset the variable information for all targets
-  void resetTargetsWithInfoVar2();
 
   // function that sets the map
   void setMap(const nav_msgs::OccupancyGrid & new_map);
@@ -219,9 +216,6 @@ public:
   // function to initialize the sensors on the perimeter
   void initializeSensorsOnPerimeter();
 
-  // function to initialize given sensor on the perimeter
-  void initializeOneSensorOnPerimeter(unsigned int sensor_index);
-
   // function to place all sensors at a given pose
   void placeSensorsAtPos(geometry_msgs::Pose new_pose);
 
@@ -231,17 +225,11 @@ public:
   // function to update particle during PSO
   void updateParticle(std::vector<geometry_msgs::Pose> global_best, double PSO_param_1, double PSO_param_2, double PSO_param_3);
 
-  // function to update particle during PSO
-  void updateParticle2(std::vector<geometry_msgs::Pose> global_best, double PSO_param_1, double PSO_param_2, double PSO_param_3);
-
   // function to update the targets_with_info variable
   void updateTargetsInfo(size_t sensor_index);
 
-  //function to update the targets_with_info variable with raytracing (lookup table)
-  void updateTargetsInfoRaytracing(size_t sensor_index);
-
   //function to update the targets_with_info variable with raytracing (lookup table); with option to save no reset info for covered targets
-  void updateTargetsInfoRaytracing_withlock(size_t sensor_index, bool lock_targets);
+  void updateTargetsInfoRaytracing(size_t sensor_index, bool lock_targets = false);
 
   // function to calculate the actual  and personal best coverage
   void calcCoverage();
@@ -278,7 +266,10 @@ public:
   visualization_msgs::MarkerArray getVisualizationMarkers();
 
   // returns all visualization markers of the particle
-  visualization_msgs::MarkerArray getsolVisualizationMarkers();
+  visualization_msgs::MarkerArray getSolutionlVisualizationMarkers();
+
+  // deletes visualization markers of all sensors in the particle
+  visualization_msgs::MarkerArray deleteVisualizationMarkers();
 };
 
 #endif

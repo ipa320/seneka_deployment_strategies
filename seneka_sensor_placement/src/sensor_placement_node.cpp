@@ -67,7 +67,7 @@ sensor_placement_node::sensor_placement_node()
   // ros publishers
   nav_path_pub_ = nh_.advertise<nav_msgs::Path>("out_path",1,true);
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1,true);
-  gPSO_sol_MA_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_gPSO_marker_array",1,true);
+//  gPSO_sol_MA_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_gPSO_marker_array",1,true);
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1,true);
   map_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>("out_cropped_map_metadata",1,true);
   offset_AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("offset_AoI", 1,true);
@@ -79,7 +79,7 @@ sensor_placement_node::sensor_placement_node()
   ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_node::startPSOCallback, this);
   ss_start_GreedyPSO_ = nh_.advertiseService("StartGreedyPSO", &sensor_placement_node::startGreedyPSOCallback, this);
   ss_start_GS_ = nh_.advertiseService("StartGS", &sensor_placement_node::startGSCallback, this);
-  ss_start_GS_with_offset_ = nh_.advertiseService("StartGS_with_offset_polygon", &sensor_placement_node::startGSCallback2, this);
+  ss_start_GS_with_offset_ = nh_.advertiseService("StartGS_with_offset_polygon", &sensor_placement_node::startGSWithOffsetCallback, this);
   ss_clear_fa_vec_ = nh_.advertiseService("ClearForbiddenAreas", &sensor_placement_node::clearFACallback, this);
   ss_test_ = nh_.advertiseService("TestService", &sensor_placement_node::testServiceCallback, this);
   // ros service clients
@@ -884,20 +884,20 @@ void sensor_placement_node::initializeGreedyPSO()
   // initialize the global best solution
   global_best_ = dummy_particle;
 
-  // initialize dummy particle2
-  particle dummy_particle2 = particle(sensor_num_, target_num_, dummy_2D_model);
+  // initialize dummy solution particle
+  particle dummy_sol_particle = particle(sensor_num_, target_num_, dummy_2D_model);
 
-  dummy_particle2.setMap(map_);
-  dummy_particle2.setAreaOfInterest(area_of_interest_);
-  dummy_particle2.setForbiddenAreaVec(forbidden_area_vec_);
-  dummy_particle2.setOpenAngles(open_angles_);
-  dummy_particle2.setRange(sensor_range_);
-  dummy_particle2.setTargetsWithInfoVar(targets_with_info_var_);
-  dummy_particle2.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
-  dummy_particle2.setLookupTable(& lookup_table_);
+  dummy_sol_particle.setMap(map_);
+  dummy_sol_particle.setAreaOfInterest(area_of_interest_);
+  dummy_sol_particle.setForbiddenAreaVec(forbidden_area_vec_);
+  dummy_sol_particle.setOpenAngles(open_angles_);
+  dummy_sol_particle.setRange(sensor_range_);
+  dummy_sol_particle.setTargetsWithInfoVar(targets_with_info_var_);
+  dummy_sol_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
+  dummy_sol_particle.setLookupTable(& lookup_table_);
 
   // set solution particle
-  sol_particle_ = dummy_particle2;
+  sol_particle_ = dummy_sol_particle;
 
   // initialize coverage
   double actual_coverage = 0;
@@ -1013,7 +1013,7 @@ void sensor_placement_node::GreedyPSOptimize()
       for(size_t i = 0; i < particle_swarm_.size(); i++)
       {
         // initialize sensor poses randomly on perimeter
-        particle_swarm_.at(i).initializeOneSensorOnPerimeter(update_sensor_ind);
+        particle_swarm_.at(i).placeSensorsRandomlyOnPerimeter();
         // initialize sensor velocities randomly
         particle_swarm_.at(i).initializeRandomSensorVelocities();
         // get calculated coverage
@@ -1043,7 +1043,7 @@ void sensor_placement_node::GreedyPSOptimize()
       for(size_t i=0; i < particle_swarm_.size(); i++)
       {
         //t_start = clock();
-        particle_swarm_.at(i).resetTargetsWithInfoVar2();   //-b- NOTE: for locked targets: covered, multiple coverage and covered_by_sensor info is kept intact
+        particle_swarm_.at(i).resetTargetsWithInfoVar();   //-b- NOTE: for locked targets: covered, multiple coverage and covered_by_sensor info is kept intact
         //t_end = clock();
         //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
         //ROS_INFO( "reset: %10.10f \n", t_diff);
@@ -1069,11 +1069,11 @@ void sensor_placement_node::GreedyPSOptimize()
     //save the found solution into solution particle
     sol_particle_.setSolutionSensors(global_best_.getActualSolution().at(0));  //NOTE: global_best_ particle has only one sensor -b-
     //publish solution particle
-    gPSO_sol_MA_pub_.publish(sol_particle_.getsolVisualizationMarkers());
+    marker_array_pub_.publish(sol_particle_.getSolutionlVisualizationMarkers());
     //hardcode the coverage by global best particle, first reset targets
-    global_best_.resetTargetsWithInfoVar2();
+    global_best_.resetTargetsWithInfoVar();
     //now lock targets that the global best is covering
-    global_best_.updateTargetsInfoRaytracing_withlock(0, true);
+    global_best_.updateTargetsInfoRaytracing(0, true);
     //calculate and print total coverage by GreedyPSO
     printTotalGreedyPSOCoverage(global_best_.getNumOfTargetsCovered());
     //set updated targets for whole particle swarm
@@ -1302,6 +1302,9 @@ bool sensor_placement_node::startGreedyPSOCallback(std_srvs::Empty::Request& req
   ROS_INFO("Initializing greedy particle swarm");
   initializeGreedyPSO();
 
+  //delete previous visualization markers if any exist
+  marker_array_pub_.publish(sol_particle_.deleteVisualizationMarkers());
+
   // publish global best visualization
   marker_array_pub_.publish(global_best_.getVisualizationMarkers());
 
@@ -1317,9 +1320,6 @@ bool sensor_placement_node::startGreedyPSOCallback(std_srvs::Empty::Request& req
   nav_path_pub_.publish(PSO_result_);
 
   ROS_INFO_STREAM("Print the best solution as Path: " << PSO_result_);
-
-  // publish global best visualization
-  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
 
   ROS_INFO("Clean up everything");
   particle_swarm_.clear();
@@ -1422,7 +1422,7 @@ bool sensor_placement_node::startGSCallback(std_srvs::Empty::Request& req, std_s
 }
 
 // callback function for the start GS service with offset parameter
-bool sensor_placement_node::startGSCallback2(sensor_placement::polygon_offset::Request& req, sensor_placement::polygon_offset::Response& res)
+bool sensor_placement_node::startGSWithOffsetCallback(sensor_placement::polygon_offset::Request& req, sensor_placement::polygon_offset::Response& res)
 {
   // save offset value received
   clipper_offset_value_ = req.offset_value;
