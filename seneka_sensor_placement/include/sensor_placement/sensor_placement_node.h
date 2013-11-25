@@ -145,6 +145,12 @@ private:
   // minimal coverage to stop PSO before reaching maximal number of PSO iterations
   double min_cov_;
 
+  // maximal number of GreedyPSO iterations
+  int iter_max_per_sensor_;
+
+  // minimal coverage to stop GreedyPSO before reaching maximal number of iterations
+  double min_sensor_cov_;
+
   // particle swarm
   vector<particle> particle_swarm_;
 
@@ -213,7 +219,6 @@ public:
 
   // declaration of ros publishers
   ros::Publisher marker_array_pub_;
-//  ros::Publisher gPSO_sol_MA_pub_;
   ros::Publisher GS_targets_grid_pub_;
   ros::Publisher map_pub_, map_meta_pub_;
   ros::Publisher nav_path_pub_;
@@ -244,6 +249,9 @@ public:
   // function to get greedy search targets
   bool getGSTargets();
 
+  // function to start map service and create look up tables
+  void initializeCallback();
+
   // function to initialize PSO-Algorithm
   void initializePSO();
 
@@ -264,9 +272,6 @@ public:
 
   // function to get the current global best solution
   void getGlobalBest();
-
-  // function to print total coverage by GreedyPSO
-  void printTotalGreedyPSOCoverage(unsigned int covered_targets_num);
 
   // function to create an offsetted polygon from area of interest
   geometry_msgs::PolygonStamped offsetAoI(double offset);

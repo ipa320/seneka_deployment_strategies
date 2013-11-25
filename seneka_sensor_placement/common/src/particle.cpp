@@ -196,7 +196,7 @@ std::vector<target_info_var> particle::getTargetsWithInfoVar()
   return targets_with_info_var_;
 }
 
-// function to get number of targets covered after call to updateTargetsInfoRaytracing_withlock
+// function to get number of targets covered after call to updateTargetsInfoRaytracing
 unsigned int particle::getNumOfTargetsCovered()
 {
   return gPSO_covered_targets_num_;
