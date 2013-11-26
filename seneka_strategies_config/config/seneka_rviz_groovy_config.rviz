@@ -6,9 +6,12 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /SensorFoVs1
+        - /SensorFoVs1/Namespaces1
         - /GS_Targets1/Namespaces1
         - /ForbiddenAreas1
         - /Greedy_PSO_sol1
+        - /Greedy_PSO_sol1/Namespaces1
       Splitter Ratio: 0.585185
     Tree Height: 898
   - Class: rviz/Time
@@ -92,7 +95,11 @@ Visualization Manager:
       Marker Topic: /out_gPSO_marker_array
       Name: Greedy_PSO_sol
       Namespaces:
-        {}
+        camera0: true
+        camera1: true
+        camera2: true
+        camera3: true
+        camera4: true
       Queue Size: 100
       Value: true
   Enabled: true

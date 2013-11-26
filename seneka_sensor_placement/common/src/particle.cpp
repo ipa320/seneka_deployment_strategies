@@ -103,9 +103,6 @@ particle::particle(int num_of_sensors, int num_of_targets, FOV_2D_model sensor_m
 
 // initialize sensor vector with as many entries as specified by sensors_num_
   sensors_.assign(sensor_num_, sensor_model);
-
-  // initialize solution sensor vector with as many entries as specified by sensors_num_
-  //sol_sensors_.assign(sensor_num_, sensor_model);
 }
 
 // destructor
@@ -196,7 +193,7 @@ std::vector<target_info_var> particle::getTargetsWithInfoVar()
   return targets_with_info_var_;
 }
 
-// function to get number of targets covered after call to updateTargetsInfoRaytracing_withlock
+// function to get number of targets covered after call to updateTargetsInfoRaytracing
 unsigned int particle::getNumOfTargetsCovered()
 {
   return gPSO_covered_targets_num_;
@@ -241,18 +238,6 @@ void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets
 
 // function to reset the variable information for all targets
 void particle::resetTargetsWithInfoVar()
-{
-  for(int i=0; i<targets_with_info_var_.size(); i++)
-  {
-    targets_with_info_var_.at(i).reset();
-  }
-
-  covered_targets_num_ = 0;
-  multiple_coverage_ = 0;
-}
-
-// function to reset the variable information for all targets
-void particle::resetTargetsWithInfoVar2()
 {
   for(int i=0; i<targets_with_info_var_.size(); i++)
   {
@@ -530,132 +515,6 @@ void particle::initializeSensorsOnPerimeter()
   }
 }
 
-
-// function to initialize sensor on the perimeter according to sensor_index
-void particle::initializeOneSensorOnPerimeter(unsigned int sensor_index)
-{
-  // initialize workspace
-  bool pose_accepted=false;
-  size_t edge_ind = 0;
-  size_t successor = 0;
-  double t = 0;
-  double alpha = 0;
-  unsigned int cell_in_vector_coordinates = 0;
-  geometry_msgs::Pose newPose;
-  geometry_msgs::Vector3 vec_sensor_dir;
-
-  // get bounding box of area of interest
-  geometry_msgs::Polygon bound_box = getBoundingBox2D(pArea_of_interest_->polygon, *pMap_);
-  double x_min = bound_box.points.at(0).x;
-  double y_min = bound_box.points.at(0).y;
-
-  double x_max = bound_box.points.at(2).x;
-  double y_max = bound_box.points.at(2).y;
-
-  // get center of the area of interest
-  geometry_msgs::Point32 polygon_center = geometry_msgs::Point32();
-
-  polygon_center.x = (double) x_min + (x_max - x_min)/2;
-  polygon_center.y = (double) y_min + (y_max - y_min)/2;
-
-//  for(size_t i = 0; i < sensors_.size(); i++)
-// {
-    if(sensor_index < pArea_of_interest_->polygon.points.size())
-    {
-      cell_in_vector_coordinates =
-        worldToMapY(pArea_of_interest_->polygon.points.at(sensor_index).y, *pMap_) * pMap_->info.width
-        + worldToMapX(pArea_of_interest_->polygon.points.at(sensor_index).x, *pMap_);
-    }
-
-    if(sensor_index < pArea_of_interest_->polygon.points.size() &&
-       (!pTargets_with_info_fix_->at(cell_in_vector_coordinates).forbidden) &&
-       (!pTargets_with_info_fix_->at(cell_in_vector_coordinates).occupied) &&
-       (pTargets_with_info_fix_->at(cell_in_vector_coordinates).map_data > -1) )
-    {
-      // set new sensor pose as one of the corners of the area of interest if not in forbidden area
-      // only set new position if the cell is not occupied and not unknoown, otherwise skip this corner
-      newPose.position.x = mapToWorldX(worldToMapX(pArea_of_interest_->polygon.points.at(sensor_index).x, *pMap_), *pMap_);
-      newPose.position.y = mapToWorldY(worldToMapY(pArea_of_interest_->polygon.points.at(sensor_index).y, *pMap_), *pMap_);
-      newPose.position.z = 0;
-
-      vec_sensor_dir.x = polygon_center.x - newPose.position.x;
-      vec_sensor_dir.y = polygon_center.y - newPose.position.y;
-      vec_sensor_dir.z = 0;
-
-      // get angle between desired sensor facing direction and x-axis
-      alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
-
-      if(vec_sensor_dir.y < 0)
-        alpha = -alpha;
-
-      // get quaternion message for desired sensor facing direction
-      newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
-
-      // set new sensor pose
-      sensors_.at(0).setSensorPose(newPose);
-
-    }
-    else
-    {
-      do
-      {
-        // get index of a random edge of the area of interest specified by a polygon
-        edge_ind = (int) randomNumber(0, pArea_of_interest_->polygon.points.size());
-        successor = 0;
-
-        if(edge_ind < (pArea_of_interest_->polygon.points.size() - 1))
-          successor = edge_ind++;
-
-        t = randomNumber(0,1);
-
-        // get random Pose on perimeter of the area of interest specified by a polygon
-        newPose.position.x = mapToWorldX(worldToMapX(pArea_of_interest_->polygon.points.at(edge_ind).x
-                              + t * (pArea_of_interest_->polygon.points.at(successor).x - pArea_of_interest_->polygon.points.at(edge_ind).x), *pMap_), *pMap_);
-        newPose.position.y = mapToWorldY(worldToMapY(pArea_of_interest_->polygon.points.at(edge_ind).y
-                              + t * (pArea_of_interest_->polygon.points.at(successor).y - pArea_of_interest_->polygon.points.at(edge_ind).y), *pMap_), *pMap_);
-        newPose.position.z = 0;
-
-        vec_sensor_dir.x = polygon_center.x - newPose.position.x;
-        vec_sensor_dir.y = polygon_center.y - newPose.position.y;
-        vec_sensor_dir.z = 0;
-
-        // get angle between desired sensor facing direction and x-axis
-        alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
-
-        if(vec_sensor_dir.y < 0)
-          alpha = -alpha;
-
-        // get quaternion message for desired sensor facing direction
-        newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
-
-        cell_in_vector_coordinates = worldToMapY(newPose.position.y, *pMap_) * pMap_->info.width + worldToMapX(newPose.position.x, *pMap_);
-
-        if( !pTargets_with_info_fix_->at(cell_in_vector_coordinates).forbidden)
-        {
-          //found a point which is not in the forbidden area
-          sensors_.at(0).setSensorPose(newPose);
-          pose_accepted=true;
-        }
-        else
-        {
-          //given point lies in forbidden area
-          pose_accepted=false;
-        }
-      }while(!pose_accepted); //keep looking until a point is found which is outside the forbidden area
-    }
-    // update the target information
-    updateTargetsInfoRaytracing(0);
-// }
-  // calculate new coverage
-  calcCoverage();
-  if(coverage_ == 0)
-  {
-    pers_best_coverage_ = coverage_;
-    pers_best_multiple_coverage_ = multiple_coverage_;
-    pers_best_ = sensors_;
-  }
-}
-
 // function to place all sensors at a given pose
 void particle::placeSensorsAtPos(geometry_msgs::Pose new_pose)
 {
@@ -691,151 +550,6 @@ void particle::initializeRandomSensorVelocities()
 
 // function to update particle during PSO
 void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, double PSO_param_1, double PSO_param_2, double PSO_param_3)
-{
-  // initialize workspace
-  double actual_angle = 0;
-  double p_best_angle = 0;
-  double g_best_angle = 0;
-  double new_angle = 0;
-  double dummy_angle = 0;
-
-  bool force_orientation_acceptance = false;
-
-  unsigned int target_ind = -1;
-
-  geometry_msgs::Twist initial_vel;
-  geometry_msgs::Pose actual_pose;
-  geometry_msgs::Pose personal_best_pose;
-  geometry_msgs::Pose global_best_pose;
-  geometry_msgs::Twist new_vel;
-  geometry_msgs::Pose new_pose;
-  geometry_msgs::Vector3 vec_sensor_dir;
-
-  // get bounding box of area of interest
-  geometry_msgs::Polygon bound_box = getBoundingBox2D(pArea_of_interest_->polygon, *pMap_);
-  double x_min = bound_box.points.at(0).x;
-  double y_min = bound_box.points.at(0).y;
-
-  double x_max = bound_box.points.at(2).x;
-  double y_max = bound_box.points.at(2).y;
-
-  // get center of the area of interest
-  geometry_msgs::Point32 polygon_center = geometry_msgs::Point32();
-
-  polygon_center.x = (double) x_min + (x_max - x_min)/2;
-  polygon_center.y = (double) y_min + (y_max - y_min)/2;
-
-  for(size_t i = 0; i < sensors_.size(); i++)
-  {
-    // get initial velocity for actual sensor
-    initial_vel = sensors_.at(i).getVelocity();
-
-    // get current pose for actual sensor
-    actual_pose = sensors_.at(i).getSensorPose();
-
-    // get personal best pose for actual sensor
-    personal_best_pose = pers_best_.at(i).getSensorPose();
-
-    // get global best pose for actual sensor
-    global_best_pose = global_best.at(i);
-
-    // get orientation angle for actual sensor
-    actual_angle = tf::getYaw(actual_pose.orientation);
-
-    // get personal best orientation angle for actual sensor
-    p_best_angle = tf::getYaw(personal_best_pose.orientation);
-
-    // get global best orientation angle for actual sensor
-    g_best_angle = tf::getYaw(global_best_pose.orientation);
-
-    // calculate vector of camera facing direction
-    vec_sensor_dir.x = cos(actual_angle);
-    vec_sensor_dir.y = sin(actual_angle);
-    vec_sensor_dir.z = 0;
-
-    // here is the actual particle swarm optimization step
-    // update the velocities for each sensor
-    // update the linear part
-    new_vel.linear.x = (PSO_param_1 * initial_vel.linear.x)
-                     + (PSO_param_2 * randomNumber(0,1) * (personal_best_pose.position.x - actual_pose.position.x))
-                     + (PSO_param_3 * randomNumber(0,1) * (global_best_pose.position.x - actual_pose.position.x));
-    new_vel.linear.y = (PSO_param_1 * initial_vel.linear.y)
-                     + (PSO_param_2 * randomNumber(0,1) * (personal_best_pose.position.y - actual_pose.position.y))
-                     + (PSO_param_3 * randomNumber(0,1) * (global_best_pose.position.y - actual_pose.position.y));
-    new_vel.linear.z = 0;
-
-    // update the angular part
-    new_vel.angular.x = 0;
-    new_vel.angular.y = 0;
-    new_vel.angular.z = (PSO_param_1 * initial_vel.angular.z)
-                      + (PSO_param_2 * randomNumber(0,1) * (actual_angle - p_best_angle))
-                      + (PSO_param_3 * randomNumber(0,1) * (actual_angle - g_best_angle));
-
-    // set new velocity
-    sensors_.at(i).setVelocity(new_vel);
-
-    // update sensor pose
-    new_pose.position.x = actual_pose.position.x + new_vel.linear.x;
-    new_pose.position.y = actual_pose.position.y + new_vel.linear.y;
-    new_pose.position.z = 0;
-
-    new_angle = actual_angle + new_vel.angular.z;
-    // readjust the new angle in the correct interval [-PI,PI]
-    while(fabs(new_angle) > PI)
-      new_angle = new_angle + (-2) * signum(new_angle) * PI;
-
-    new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
-    if(!newPositionAccepted(new_pose))
-    {
-      // find a random uncovered and non occupied target not forbidden
-      target_ind = randomFreeTarget();
-
-      // update sensor position
-      new_pose.position.x = pTargets_with_info_fix_->at(target_ind).world_pos.x;
-      new_pose.position.y = pTargets_with_info_fix_->at(target_ind).world_pos.y;
-      new_pose.position.z = 0;
-
-      // desired sensor facing direction is the center of the area of interest
-      vec_sensor_dir.x = polygon_center.x - new_pose.position.x;
-      vec_sensor_dir.y = polygon_center.y - new_pose.position.y;
-      vec_sensor_dir.z = 0;
-
-      // get angle between desired sensor facing direction and x-axis
-      new_angle = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
-      if(vec_sensor_dir.y < 0)
-        new_angle = -new_angle;
-      new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
-    }
-
-    dummy_angle = new_angle;
-    while(( !newOrientationAccepted(i, new_pose) ) && (!force_orientation_acceptance))
-    {
-      // try next angle in 10/180*PI steps
-      new_angle = new_angle + 0.1745;
-      if(new_angle > PI)
-        new_angle = new_angle - 2 * PI;
-
-      if( fabs(new_angle - dummy_angle) < 0.001)
-      {
-        new_angle = dummy_angle + PI/2;
-        force_orientation_acceptance = true;
-      }
-      new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
-    }
-
-    // set new sensor pose
-    sensors_.at(i).setSensorPose(new_pose);
-
-    // update the target information
-    updateTargetsInfoRaytracing(i);
-  }
-  // calculate new coverage
-  calcCoverage();
-}
-
-
-// function to update particle during PSO
-void particle::updateParticle2(std::vector<geometry_msgs::Pose> global_best, double PSO_param_1, double PSO_param_2, double PSO_param_3)
 {
   // initialize workspace
   double actual_angle = 0;
@@ -1097,183 +811,8 @@ void particle::updateTargetsInfo(size_t sensor_index)
   }
 }
 
-//function to update the targets_with_info variable with raytracing (lookup table)
-void particle::updateTargetsInfoRaytracing(size_t sensor_index)
-{
-  //clear vector of ray end points
-  sensors_.at(sensor_index).clearRayEndPoints();
-
-  unsigned int max_number_of_rays = sensors_.at(sensor_index).getLookupTable()->size();
-  geometry_msgs::Pose sensor_pose = sensors_.at(sensor_index).getSensorPose();
-
-  std::vector<double> open_ang = sensors_.at(sensor_index).getOpenAngles();
-  double orientation = tf::getYaw(sensor_pose.orientation);
-
-  //get angles of sensor and keep them between 0 and 2*PI
-  double angle1 = orientation - (open_ang.front() / 2.0);
-  if(angle1 >= 2.0*PI)
-    angle1 -= 2.0*PI;
-  else if(angle1 < 0)
-    angle1 += 2.0*PI;
-
-  double angle2 = orientation + (open_ang.front() / 2.0);
-  if(angle2 >= 2.0*PI)
-    angle2 -= 2.0*PI;
-  else if(angle2 < 0)
-    angle2 += 2.0*PI;
-
-  unsigned int ray_start = sensors_.at(sensor_index).rayOfAngle(angle1);
-  unsigned int ray_end = sensors_.at(sensor_index).rayOfAngle(angle2);
-
-  unsigned int number_of_rays_to_check;
-
-  //are the rays in between the beginning and end of the lookup table?
-  if(ray_end >= ray_start)
-    number_of_rays_to_check = ray_end - ray_start + 1;
-  else
-    number_of_rays_to_check = max_number_of_rays - ray_start + ray_end + 1;
-
-  unsigned int rays_checked = 0;
-  unsigned int ray = ray_start;
-
-  //go through all rays
-  while(rays_checked < number_of_rays_to_check)
-  {
-    geometry_msgs::Point ray_end_point;
-    ray_end_point.x = 0;
-    ray_end_point.y = 0;
-
-    int x, y;
-    int cell;
-    int lookup_table_x, lookup_table_y;
-
-    //go through ray
-    for(cell=0; cell < sensors_.at(sensor_index).getLookupTable()->at(ray).size(); cell++)
-    {
-      lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell).x;
-      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell).y;
-
-      //absolute x and y map coordinates of the current cell
-      x = worldToMapX(sensor_pose.position.x, *pMap_) + lookup_table_x;
-      y = worldToMapY(sensor_pose.position.y, *pMap_) + lookup_table_y;
-
-      int cell_in_vector_coordinates = y * pMap_->info.width + x;
-
-      //cell coordinates are valid (not outside of the area of interest)
-      if((y >= 0) && (x >= 0) && (y < pMap_->info.height) && (x < pMap_->info.width) && (cell_in_vector_coordinates < pTargets_with_info_fix_->size()))
-      {
-        //cell not on the perimeter
-        if(pTargets_with_info_fix_->at(cell_in_vector_coordinates).potential_target != 0)
-        {
-          //cell a potential target and not occupied
-          if((pTargets_with_info_fix_->at(cell_in_vector_coordinates).potential_target == 1) &&
-             (pTargets_with_info_fix_->at(cell_in_vector_coordinates).occupied == false))
-          {
-            //target covered
-            targets_with_info_var_.at(cell_in_vector_coordinates).covered_by_sensor.at(sensor_index) = true;
-
-            if(targets_with_info_var_.at(cell_in_vector_coordinates).covered == false)
-            {
-              // now the given target is covered by at least one sensor
-              targets_with_info_var_.at(cell_in_vector_coordinates).covered = true;
-              // increment the covered targets counter only if the given target is not covered by another sensor yet
-              covered_targets_num_++;
-            }
-            else
-            {
-        //     ROS_INFO_STREAM("found already covered target at "<< cell_in_vector_coordinates);
-              if(targets_with_info_var_.at(cell_in_vector_coordinates).multiple_covered == false)
-              {
-                // now the given target is covered by multiple sensors
-                targets_with_info_var_.at(cell_in_vector_coordinates).multiple_covered = true;
-              }
-              multiple_coverage_++;
-            }
-          }
-          //cell not a potential target or occupied -> skip rest of this ray
-          else
-          {
-            break;
-          }
-        }
-        //cell on the perimeter
-        else
-        {
-          //cell on perimeter and not occupied -> continue with the next cell on the ray (no coverage)
-          if(pTargets_with_info_fix_->at(cell_in_vector_coordinates).occupied == false)
-          {
-            //continue with next cell without (no coverage)
-            continue;
-          }
-          else
-          //cell on perimeter and occupied -> skip rest of this ray
-          {
-            break;
-          }
-        }
-      }
-      else
-      //cell coordinates not valid (outside the area of interest) -> skip rest of this ray
-      {
-        break;
-      }
-    }
-
-    //skipped some part of the ray -> get coordinates of the last non-occupied cell
-    if((cell != sensors_.at(sensor_index).getLookupTable()->at(ray).size()-1) && (cell != 0))
-    {
-      lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).x;
-      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).y;
-    }
-
-    //absolute x and y map coordinates of the last non-occupied cell
-    x = worldToMapX(sensor_pose.position.x, *pMap_) + lookup_table_x;
-    y = worldToMapY(sensor_pose.position.y, *pMap_) + lookup_table_y;
-
-    //update endpoint
-    if(lookup_table_x <= 0)
-      //point is left of sensor
-    {
-      ray_end_point.x = mapToWorldX(x, *pMap_) - sensor_pose.position.x;
-    }
-    else
-      //cell is right of sensor
-    {
-      ray_end_point.x = mapToWorldX(x, *pMap_) - sensor_pose.position.x + pMap_->info.resolution; //add one cell for visualization
-    }
-
-    if(lookup_table_y <= 0)
-      //cell is below sensor
-    {
-      ray_end_point.y = mapToWorldY(y, *pMap_) - sensor_pose.position.y;
-    }
-    else
-      //cell is over sensor
-    {
-      ray_end_point.y = mapToWorldY(y, *pMap_) - sensor_pose.position.y + pMap_->info.resolution; //add one cell for visualization
-    }
-
-    //add endpoint to the vector of endpoints
-    sensors_.at(sensor_index).addRayEndPoint(ray_end_point);
-
-    //increase counter
-    rays_checked++;
-
-    //reached end of circle -> set ray to 0
-    if(ray == (max_number_of_rays -1))
-    {
-      ray = 0;
-    }
-    else
-    {
-      ray++;
-    }
-  }
-}
-
-
 //function to update the targets_with_info variable with raytracing (lookup table); with option to save no reset info for covered targets
-void particle::updateTargetsInfoRaytracing_withlock(size_t sensor_index, bool lock_targets)
+void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_targets)
 {
   //clear vector of ray end points
   sensors_.at(sensor_index).clearRayEndPoints();
@@ -1589,7 +1128,7 @@ bool particle::newOrientationAccepted(size_t sensor_index, geometry_msgs::Pose n
   return result;
 }
 
-// function to update the original sensors vector; to show solution as path after GreedyPSO optimization step
+// function to update the original sensors vector; to show solution as path after GreedyPSO optimization step -b-
 void particle::updateOrigSensorsVec()
 {
   if(!sol_sensors_.empty())
@@ -1746,11 +1285,11 @@ visualization_msgs::MarkerArray particle::getVisualizationMarkers()
 }
 
 // returns all visualization markers of the particle
-visualization_msgs::MarkerArray particle::getsolVisualizationMarkers()
+visualization_msgs::MarkerArray particle::getSolutionlVisualizationMarkers()
 {
   visualization_msgs::MarkerArray array, tmp;
   std::vector<FOV_2D_model>::iterator it;
-  unsigned int id = 0;
+  unsigned int id = sensor_num_-1;      //start id from top to bottom to avoid conflict with sensor0 which is used in optimization step
   // loop over all sensors
   for ( it = sol_sensors_.begin(); it != sol_sensors_.end(); ++it )
   {
@@ -1759,8 +1298,34 @@ visualization_msgs::MarkerArray particle::getsolVisualizationMarkers()
     for (unsigned int i = 0; i < tmp.markers.size(); i++)
       array.markers.push_back(tmp.markers.at(i));
 
-    id++;
+    id--;
   }
 
   return array;
 }
+
+// deletes visualization markers of all sensors in the particle
+visualization_msgs::MarkerArray particle::deleteVisualizationMarkers()
+{
+  visualization_msgs::MarkerArray array;
+  unsigned int id = 0;
+  //setup
+  visualization_msgs::Marker dummy_marker;
+  dummy_marker.header.frame_id = "/map";
+  dummy_marker.header.stamp = ros::Time();
+  dummy_marker.action = visualization_msgs::Marker::DELETE;
+  //for all sensors
+  for (size_t i=0; i<sensors_.size(); i++)
+  {
+    dummy_marker.ns =sensors_.at(0).getName()+boost::lexical_cast<std::string>(id);
+    //NOTE: each namespace can have 3 ids for different markers: ray, border, triangle
+    for (int i=0; i<3; i++)
+    {
+      dummy_marker.id = i;
+      array.markers.push_back(dummy_marker);
+    }
+    id++;
+  }
+  return array;
+}
+
