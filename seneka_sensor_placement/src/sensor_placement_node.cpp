@@ -998,19 +998,20 @@ void sensor_placement_node::GreedyPSOptimize()
 
   //local variable
   double actual_sensor_coverage = 0;
-  // PSO-iterator
+  //PSO-iterator
   int iter = 0;
   std::vector<geometry_msgs::Pose> global_pose;
   //initialize total coverage by GreedyPSO
   total_gPSO_covered_targets_num_ = 0;
 
+  //iterate whole swarm optimization step as many times as the number of sensors
   for (unsigned int sensor_iter = 0; sensor_iter<sensor_num_; sensor_iter++)
   {
     //reinitialize
     iter=0;
     best_cov_=0;
 
-    // place sensors randomly on perimeter for each particle with random velocities
+    //place sensors randomly on perimeter for each particle with random velocities
     if(AoI_received_)
     {
       for(size_t i = 0; i < particle_swarm_.size(); i++)
@@ -1028,17 +1029,17 @@ void sensor_placement_node::GreedyPSOptimize()
           global_best_ = particle_swarm_.at(i);
         }
       }
-      // after the initialization step we're looking for a new global best solution
+      //after the initialization step we're looking for a new global best solution
       getGlobalBest();
 
-      // publish the actual global best visualization
+      //publish the actual global best visualization
       marker_array_pub_.publish(global_best_.getVisualizationMarkers());
     }
 
 
-    // iteration step
-    // continue calculation as long as there are iteration steps left and actual best coverage (per sensor) is
-    // lower than mininmal sensor coverage
+    //iteration step
+    //continue calculation as long as there are iteration steps left and actual best coverage (per sensor) is
+    //lower than mininmal sensor coverage
     while(iter < iter_max_per_sensor_ && best_cov_ < min_sensor_cov_)
     {
       global_pose = global_best_.getSolutionPositions();
@@ -1058,15 +1059,15 @@ void sensor_placement_node::GreedyPSOptimize()
         //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
         //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
       }
-      // after the update step we're looking for a new global best solution
+      //after the update step we're looking for a new global best solution
       getGlobalBest();
 
-      // publish the actual global best visualization
+      //publish the actual global best visualization
       marker_array_pub_.publish(global_best_.getVisualizationMarkers());
 
       ROS_INFO_STREAM("sensor number: " << sensor_iter <<" iteration: " << iter << " with coverage: " << best_cov_);
 
-      // increment PSO-iterator
+      //increment PSO-iterator
       iter++;
     }
     //save the found solution into solution particle
@@ -1267,10 +1268,10 @@ bool sensor_placement_node::startGreedyPSOCallback(std_srvs::Empty::Request& req
   ROS_INFO("Initializing greedy particle swarm");
   initializeGreedyPSO();
 
-  //delete previous visualization markers if any exist
+  //delete visualization markers from previous run
   marker_array_pub_.publish(sol_particle_.deleteVisualizationMarkers());
 
-  // publish global best visualization
+  //publish global best visualization
   marker_array_pub_.publish(global_best_.getVisualizationMarkers());
 
   ROS_INFO("Greedy Particle swarm Optimization step");

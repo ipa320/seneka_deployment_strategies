@@ -103,9 +103,6 @@ particle::particle(int num_of_sensors, int num_of_targets, FOV_2D_model sensor_m
 
 // initialize sensor vector with as many entries as specified by sensors_num_
   sensors_.assign(sensor_num_, sensor_model);
-
-  // initialize solution sensor vector with as many entries as specified by sensors_num_
-  //sol_sensors_.assign(sensor_num_, sensor_model);
 }
 
 // destructor
@@ -1131,7 +1128,7 @@ bool particle::newOrientationAccepted(size_t sensor_index, geometry_msgs::Pose n
   return result;
 }
 
-// function to update the original sensors vector; to show solution as path after GreedyPSO optimization step
+// function to update the original sensors vector; to show solution as path after GreedyPSO optimization step -b-
 void particle::updateOrigSensorsVec()
 {
   if(!sol_sensors_.empty())
@@ -1292,7 +1289,7 @@ visualization_msgs::MarkerArray particle::getSolutionlVisualizationMarkers()
 {
   visualization_msgs::MarkerArray array, tmp;
   std::vector<FOV_2D_model>::iterator it;
-  unsigned int id = 0;
+  unsigned int id = sensor_num_-1;      //start id from top to bottom to avoid conflict with sensor0 which is used in optimization step
   // loop over all sensors
   for ( it = sol_sensors_.begin(); it != sol_sensors_.end(); ++it )
   {
@@ -1301,7 +1298,7 @@ visualization_msgs::MarkerArray particle::getSolutionlVisualizationMarkers()
     for (unsigned int i = 0; i < tmp.markers.size(); i++)
       array.markers.push_back(tmp.markers.at(i));
 
-    id++;
+    id--;
   }
 
   return array;
