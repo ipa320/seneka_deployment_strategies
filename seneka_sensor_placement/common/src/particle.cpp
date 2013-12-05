@@ -239,7 +239,7 @@ void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets
 // function to reset the variable information for all targets
 void particle::resetTargetsWithInfoVar()
 {
-  #pragma omp parallel for //-b- TODO: test this
+  #pragma omp parallel for  //NOTE: parallelized only when called from a non-parallel block. TODO: use omp_set_nested(n), also take into account that nested parallel regions will itself add an overhead
     for(int i=0; i<targets_with_info_var_.size(); i++)
     {
       if (targets_with_info_var_.at(i).no_reset==false)

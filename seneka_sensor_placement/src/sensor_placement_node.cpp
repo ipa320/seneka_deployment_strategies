@@ -49,7 +49,6 @@
  ****************************************************************/
 
 #include <sensor_placement_node.h>
-#include <omp.h>
 
 // constructor
 sensor_placement_node::sensor_placement_node()
@@ -823,29 +822,6 @@ geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
 // function to initialize PSO-Algorithm
 void sensor_placement_node::initializePSO()
 {
-
-/*
-  int check=0;
-  for (int ww=0; ww<10; ww++)
-  {
-    check=0;
-    #pragma omp parallel for
-      for (int q=0; q<10; q++)
-      {
-        #pragma omp atomic
-          check++;
-        //  ROS_INFO_STREAM("value of check: "<<check << " q is: " <<q);
-
-
-        //#pragma omp flush(check)
-        //ROS_INFO_STREAM("Hello from thread " << omp_get_thread_num() << " nthreads " << omp_get_num_threads());
-      }
-
-    ROS_INFO_STREAM("final value of check" << check);
-  }
-*/
-
-
   // initialize pointer to dummy sensor_model
   FOV_2D_model dummy_2D_model;
   dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
@@ -872,7 +848,7 @@ void sensor_placement_node::initializePSO()
   // initialize sensors randomly on perimeter for each particle with random velocities
   if(AoI_received_)
   {
-    for(size_t i = 0; i < particle_swarm_.size(); i++)        //-b-np-
+    for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
       // initialize sensor poses randomly on perimeter
       particle_swarm_.at(i).initializeSensorsOnPerimeter();

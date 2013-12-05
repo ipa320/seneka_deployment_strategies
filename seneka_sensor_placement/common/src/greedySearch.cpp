@@ -102,7 +102,6 @@ greedySearch::~greedySearch(){}
 void greedySearch::newGreedyPlacement(size_t sensor_index)
 {
   bool update_covered_info;
-  unsigned int max_cov_ind;
   int placement_point_id;
   int num_of_slices;
   int coverage;
@@ -168,14 +167,14 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
   //reset max targets covered information
   resetGSpool();
 
-  max_cov_ind=0;
   max_sum=0;
 
   //place the current sensor on all points in GS pool one by one and calculate coverge
-  for (size_t point_id=0; point_id<GS_pool_.size(); point_id=point_id++)
+//  #pragma omp parallel for private(new_sum,new_pose,max_sum,coverage)   //TODO: fix error
+  for (size_t point_id=0; point_id<GS_pool_.size(); point_id++)
   {
-    //clear data
-    coverage_vec_.clear();
+    //coverage vector
+    std::vector<int> coverage_vec;
 
     //calculate world position of current point id and place sensor at that position
     new_pose.position.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
@@ -187,17 +186,17 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
       new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha);
       sensors_.at(sensor_index).setSensorPose(new_pose);
       coverage = getCoverageRaytracing(sensor_index);         //get coverage at new_pose
-      coverage_vec_.push_back(coverage);                      //save in coverage in coverage_vec_
+      coverage_vec.push_back(coverage);                      //save in coverage in coverage_vec_
     }
 
     //now find N consecutive slices that give maximum coverage. (N: num_of_slices)
-    for (size_t cov_vec_ind=0; cov_vec_ind<coverage_vec_.size(); cov_vec_ind++)
+    for (size_t cov_vec_ind=0; cov_vec_ind<coverage_vec.size(); cov_vec_ind++)
     {
       //calculate all possible consecutive sums
       new_sum=0;
       for (size_t k = 0; k<num_of_slices; k++)
       {
-        new_sum = new_sum + coverage_vec_.at( (cov_vec_ind+k) % (coverage_vec_.size()) );
+        new_sum = new_sum + coverage_vec.at( (cov_vec_ind+k) % (coverage_vec.size()) );
       }
 
       //if new sum is larger than max sum then update max pose info
