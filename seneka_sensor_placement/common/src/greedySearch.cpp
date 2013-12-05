@@ -179,7 +179,7 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
     new_pose.position.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
     new_pose.position.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
     new_pose.position.z = 0;
-    for (double alpha=0; alpha<2*PI; alpha=alpha+gs_ang_r[0]) //-b- TODO: change loop variable type and apply pragma omp parallel for
+    for (double alpha=0; alpha<2*PI; alpha=alpha+gs_ang_r[0]) //-b- TODO: change loop variable type
     {
       //look around in all directions with resolution of the slice
       new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha);
