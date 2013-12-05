@@ -63,6 +63,9 @@ particle::particle()
   // intialize coverage
   coverage_ = 0;
 
+  // initialize coverage for GreedyPSO
+  gPSO_covered_targets_num_ = 0;
+
   // initialize personal best coverage
   pers_best_coverage_ = 0;
 
@@ -88,14 +91,17 @@ particle::particle(int num_of_sensors, int num_of_targets, FOV_2D_model sensor_m
   // intialize coverage
   coverage_ = 0;
 
+  // initialize coverage for GreedyPSO
+  gPSO_covered_targets_num_ = 0;
+
   // initialize personal best coverage
   pers_best_coverage_ = 0;
 
-  //initialize multiple coverage indices
+  // initialize multiple coverage indices
   multiple_coverage_ = 0;
   pers_best_multiple_coverage_ = 0;
 
-  // initialize sensor vector with as many entries as specified by sensors_num_
+// initialize sensor vector with as many entries as specified by sensors_num_
   sensors_.assign(sensor_num_, sensor_model);
 }
 
@@ -181,6 +187,18 @@ int particle::getMultipleCoverageIndex()
   return multiple_coverage_;
 }
 
+// function to get targets_info_var
+std::vector<target_info_var> particle::getTargetsWithInfoVar()
+{
+  return targets_with_info_var_;
+}
+
+// function to get number of targets covered after call to updateTargetsInfoRaytracing
+unsigned int particle::getNumOfTargetsCovered()
+{
+  return gPSO_covered_targets_num_;
+}
+
 // function that sets the member varialbe sensor_um_ and reserves capacity for vector sensors_
 void particle::setSensorNum(int num_of_sensors)
 {
@@ -193,6 +211,12 @@ void particle::setSensorNum(int num_of_sensors)
   // initialize sensor vector with as many entries as specified by sensors_num_
   sensors_.reserve(sensor_num_);
 
+}
+
+// function to set solution
+void particle::setSolutionSensors(FOV_2D_model sol_sensor)
+{
+  sol_sensors_.push_back(sol_sensor);
 }
 
 // function to set the fix information for all targets
@@ -217,7 +241,8 @@ void particle::resetTargetsWithInfoVar()
 {
   for(int i=0; i<targets_with_info_var_.size(); i++)
   {
-    targets_with_info_var_.at(i).reset();
+    if (targets_with_info_var_.at(i).no_reset==false)
+      targets_with_info_var_.at(i).reset();
   }
 
   covered_targets_num_ = 0;
@@ -786,8 +811,8 @@ void particle::updateTargetsInfo(size_t sensor_index)
   }
 }
 
-//function to update the targets_with_info variable with raytracing (lookup table)
-void particle::updateTargetsInfoRaytracing(size_t sensor_index)
+//function to update the targets_with_info variable with raytracing (lookup table); with option to save no reset info for covered targets
+void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_targets)
 {
   //clear vector of ray end points
   sensors_.at(sensor_index).clearRayEndPoints();
@@ -865,6 +890,13 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
             {
               // now the given target is covered by at least one sensor
               targets_with_info_var_.at(cell_in_vector_coordinates).covered = true;
+
+              if (lock_targets==true)
+              {
+                targets_with_info_var_.at(cell_in_vector_coordinates).no_reset=true;
+                gPSO_covered_targets_num_++;
+              }
+
               // increment the covered targets counter only if the given target is not covered by another sensor yet
               covered_targets_num_++;
             }
@@ -958,7 +990,6 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
     }
   }
 }
-
 
 // function to calculate the actual and personal best coverage
 void particle::calcCoverage()
@@ -1095,6 +1126,18 @@ bool particle::newOrientationAccepted(size_t sensor_index, geometry_msgs::Pose n
     result = true;
 
   return result;
+}
+
+// function to update the original sensors vector; to show solution as path after GreedyPSO optimization step -b-
+void particle::updateOrigSensorsVec()
+{
+  if(!sol_sensors_.empty())
+  {
+    sensors_ = sol_sensors_;
+  }
+  else
+    ROS_ERROR("sol_sensors_ vector is empty. updating sensors_ vector failed!");
+
 }
 
 // helper function to find an uncovered target far away from a given sensor position
@@ -1240,3 +1283,49 @@ visualization_msgs::MarkerArray particle::getVisualizationMarkers()
 
   return array;
 }
+
+// returns all visualization markers of the particle
+visualization_msgs::MarkerArray particle::getSolutionlVisualizationMarkers()
+{
+  visualization_msgs::MarkerArray array, tmp;
+  std::vector<FOV_2D_model>::iterator it;
+  unsigned int id = sensor_num_-1;      //start id from top to bottom to avoid conflict with sensor0 which is used in optimization step
+  // loop over all sensors
+  for ( it = sol_sensors_.begin(); it != sol_sensors_.end(); ++it )
+  {
+    tmp = it->getVisualizationMarkers(id);
+    // copy over all markers
+    for (unsigned int i = 0; i < tmp.markers.size(); i++)
+      array.markers.push_back(tmp.markers.at(i));
+
+    id--;
+  }
+
+  return array;
+}
+
+// deletes visualization markers of all sensors in the particle
+visualization_msgs::MarkerArray particle::deleteVisualizationMarkers()
+{
+  visualization_msgs::MarkerArray array;
+  unsigned int id = 0;
+  //setup
+  visualization_msgs::Marker dummy_marker;
+  dummy_marker.header.frame_id = "/map";
+  dummy_marker.header.stamp = ros::Time();
+  dummy_marker.action = visualization_msgs::Marker::DELETE;
+  //for all sensors
+  for (size_t i=0; i<sensors_.size(); i++)
+  {
+    dummy_marker.ns =sensors_.at(0).getName()+boost::lexical_cast<std::string>(id);
+    //NOTE: each namespace can have 3 ids for different markers: ray, border, triangle
+    for (int i=0; i<3; i++)
+    {
+      dummy_marker.id = i;
+      array.markers.push_back(dummy_marker);
+    }
+    id++;
+  }
+  return array;
+}
+

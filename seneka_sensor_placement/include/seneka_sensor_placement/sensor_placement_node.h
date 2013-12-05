@@ -145,8 +145,20 @@ private:
   // minimal coverage to stop PSO before reaching maximal number of PSO iterations
   double min_cov_;
 
+  // maximal number of GreedyPSO iterations
+  int iter_max_per_sensor_;
+
+  // minimal coverage to stop GreedyPSO before reaching maximal number of iterations
+  double min_sensor_cov_;
+
   // particle swarm
   vector<particle> particle_swarm_;
+
+  // Greedy_PSO solution
+  particle sol_particle_;
+
+  // total number of targets covered by GreedyPSO
+  unsigned int total_gPSO_covered_targets_num_;
 
   // vector storing the positions global best solution of the particle swarm
   particle global_best_;
@@ -215,10 +227,11 @@ public:
 
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;
-  ros::ServiceServer ss_test_;
+  ros::ServiceServer ss_start_GreedyPSO_;
   ros::ServiceServer ss_start_GS_;
   ros::ServiceServer ss_start_GS_with_offset_;
   ros::ServiceServer ss_clear_fa_vec_;
+  ros::ServiceServer ss_test_;
 
   // declaration of ros service clients
   ros::ServiceClient sc_get_map_;
@@ -233,31 +246,37 @@ public:
   // function to get an array of targets from the map and the area of interest specified as polygon
   bool getTargets();
 
+  // function to get greedy search targets
+  bool getGSTargets();
+
+  // function to start map service and create look up tables
+  void initializeCallback();
+
   // function to initialize PSO-Algorithm
   void initializePSO();
 
-  // function for the actual partcile-swarm-optimization
-  void PSOptimize();
-
-  // function to get the current global best solution
-  void getGlobalBest();
-
-  // get greedy search targets
-  bool getGSTargets();
-
-  // get greedy search targets also taking care of offset polygon
-  bool getGSTargets2();
+  // function to initialize Greedý-PSO-Algorithm
+  void initializeGreedyPSO();
 
   // function to initialize GS-Algorithm
   void initializeGS();
 
+  // function for the actual partcile-swarm-optimization
+  void PSOptimize();
+
+  // function for the  particle-swarm-optimization with Greedy optimization
+  void GreedyPSOptimize();
+
   // function to run Greedy Search Algorithm
   void runGS();
+
+  // function to get the current global best solution
+  void getGlobalBest();
 
   // function to create an offsetted polygon from area of interest
   geometry_msgs::PolygonStamped offsetAoI(double offset);
 
-  // returns the visualization markers of a vector of polygons
+  // function to return the visualization markers of a vector of polygons
   visualization_msgs::MarkerArray getPolygonVecVisualizationMarker(std::vector<geometry_msgs::PolygonStamped>, std::string );
 
 
@@ -269,17 +288,20 @@ public:
   // callback function for the start PSO service
   bool startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
-  // callback function for the test service
-  bool testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+  // callback function for the start GreedyPSO service
+  bool startGreedyPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
   // callback function for the start GS service
   bool startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
+  // callback function for the start GS service with offset parameter
+  bool startGSWithOffsetCallback(seneka_sensor_placement::polygon_offset::Request& req, seneka_sensor_placement::polygon_offset::Response& res);
+
   // callback function for clearing all forbidden areas
   bool clearFACallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
-  // callback function for the start GS service with offset parameter
-  bool startGSCallback2(seneka_sensor_placement::polygon_offset::Request& req, seneka_sensor_placement::polygon_offset::Response& res);
+  // callback function for the test service
+  bool testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
   // callback functions
   void AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI);

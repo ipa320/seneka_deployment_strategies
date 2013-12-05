@@ -88,6 +88,9 @@ private:
   // std-vector storing the sensors
   std::vector< FOV_2D_model > sensors_;
 
+  // std-vector storing the sensors
+  std::vector< FOV_2D_model > sol_sensors_;
+
   // std-vector storing the personal best solution of the particle
   std::vector< FOV_2D_model > pers_best_;
 
@@ -101,6 +104,9 @@ private:
   // number of targets
   int target_num_;
   int covered_targets_num_;
+
+  // covered targets by GreedyPSO
+  int gPSO_covered_targets_num_;
 
   // actual coverage
   double coverage_;
@@ -159,8 +165,17 @@ public:
   // function to get multiple coverage index
   int getMultipleCoverageIndex();
 
+  // function to get targets_info_var
+  std::vector<target_info_var> getTargetsWithInfoVar();
+
+  // function to get number of targets covered after locking targets by updateTargetsInfoRaytracing() function
+  unsigned int getNumOfTargetsCovered();
+
 
   // ************************ setter functions ************************
+
+  // function to set solution
+  void setSolutionSensors(FOV_2D_model sol_sensor);
 
   // function that sets the member variable sensor_num_ and reserves capacity for vector sensors_
   void setSensorNum(int num_of_sensors);
@@ -213,8 +228,8 @@ public:
   // function to update the targets_with_info variable
   void updateTargetsInfo(size_t sensor_index);
 
-  //function to update the targets_with_info variable with raytracing (lookup table)
-  void updateTargetsInfoRaytracing(size_t sensor_index);
+  //function to update the targets_with_info variable with raytracing (lookup table); with option to save no reset info for covered targets
+  void updateTargetsInfoRaytracing(size_t sensor_index, bool lock_targets = false);
 
   // function to calculate the actual  and personal best coverage
   void calcCoverage();
@@ -227,6 +242,9 @@ public:
 
   // function to check if the new sensor orientation is accepted
   bool newOrientationAccepted(size_t sensor_index, geometry_msgs::Pose new_pose_candidate);
+
+  // function to update the original sensors vector; to show solution as path after GreedyPSO optimization step
+  void updateOrigSensorsVec();
 
   // ************************* help functions *************************
 
@@ -246,6 +264,12 @@ public:
 
   // returns all visualization markers of the particle
   visualization_msgs::MarkerArray getVisualizationMarkers();
+
+  // returns all visualization markers of the particle
+  visualization_msgs::MarkerArray getSolutionlVisualizationMarkers();
+
+  // deletes visualization markers of all sensors in the particle
+  visualization_msgs::MarkerArray deleteVisualizationMarkers();
 };
 
 #endif

@@ -76,11 +76,11 @@ sensor_placement_node::sensor_placement_node()
 
   // ros service servers
   ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_node::startPSOCallback, this);
-  ss_test_ = nh_.advertiseService("TestService", &sensor_placement_node::testServiceCallback, this);
+  ss_start_GreedyPSO_ = nh_.advertiseService("StartGreedyPSO", &sensor_placement_node::startGreedyPSOCallback, this);
   ss_start_GS_ = nh_.advertiseService("StartGS", &sensor_placement_node::startGSCallback, this);
-  ss_start_GS_with_offset_ = nh_.advertiseService("StartGS_with_offset_polygon", &sensor_placement_node::startGSCallback2, this);
+  ss_start_GS_with_offset_ = nh_.advertiseService("StartGS_with_offset_polygon", &sensor_placement_node::startGSWithOffsetCallback, this);
   ss_clear_fa_vec_ = nh_.advertiseService("ClearForbiddenAreas", &sensor_placement_node::clearFACallback, this);
-
+  ss_test_ = nh_.advertiseService("TestService", &sensor_placement_node::testServiceCallback, this);
   // ros service clients
   sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>("static_map");
 
@@ -95,6 +95,9 @@ sensor_placement_node::sensor_placement_node()
 
   // initialize number of targets
   target_num_ = 0;
+
+  // initialize total number of targets covered by GreedyPSO
+  total_gPSO_covered_targets_num_ = 0;
 
   // initialize best particle index
   best_particle_index_ = 0;
@@ -168,11 +171,23 @@ void sensor_placement_node::getParams()
   }
   pnh_.param("max_num_iterations",iter_max_,400);
 
+  if(!pnh_.hasParam("max_num_iterations_per_sensor"))
+  {
+    ROS_WARN("No parameter max_num_iterations_per_sensor on parameter server. Using default [30]");
+  }
+  pnh_.param("max_num_iterations_per_sensor",iter_max_per_sensor_,30);
+
   if(!pnh_.hasParam("min_coverage_to_stop"))
   {
     ROS_WARN("No parameter min_coverage_to_stop on parameter server. Using default [0.95]");
   }
   pnh_.param("min_coverage_to_stop",min_cov_,0.95);
+
+  if(!pnh_.hasParam("min_sensor_coverage_to_stop"))
+  {
+    ROS_WARN("No parameter min_sensor_coverage_to_stop on parameter server. Using default [0.08]");
+  }
+  pnh_.param("min_sensor_coverage_to_stop",min_sensor_cov_, 0.08);
 
   // get PSO configuration parameters
   if(!pnh_.hasParam("c1"))
@@ -260,6 +275,7 @@ bool sensor_placement_node::getTargets()
           //variable information
           dummy_target_info_var.covered = false;
           dummy_target_info_var.multiple_covered = false;
+          dummy_target_info_var.no_reset = false;
 
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
@@ -309,6 +325,7 @@ bool sensor_placement_node::getTargets()
           //variable information
           dummy_target_info_var.covered = false;
           dummy_target_info_var.multiple_covered = false;
+          dummy_target_info_var.no_reset = false;
 
           // the given position lies withhin the polygon
           if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 2)
@@ -365,352 +382,6 @@ bool sensor_placement_node::getTargets()
     ROS_WARN("No map received! Not able to propose sensor positions.");
   }
   return result;
-}
-
-
-
-// function to initialize PSO-Algorithm
-void sensor_placement_node::initializePSO()
-{
-  // initialize pointer to dummy sensor_model
-  FOV_2D_model dummy_2D_model;
-  dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
-
-  // initialize dummy particle
-  particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
-
-  dummy_particle.setMap(map_);
-  dummy_particle.setAreaOfInterest(area_of_interest_);
-  dummy_particle.setForbiddenAreaVec(forbidden_area_vec_);
-  dummy_particle.setOpenAngles(open_angles_);
-  dummy_particle.setRange(sensor_range_);
-  dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
-  dummy_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
-  dummy_particle.setLookupTable(& lookup_table_);
-
-  // initialize particle swarm with given number of particles containing given number of sensors
-  particle_swarm_.assign(particle_num_,dummy_particle);
-  // initialize the global best solution
-  global_best_ = dummy_particle;
-
-  double actual_coverage = 0;
-
-  // initialize sensors randomly on perimeter for each particle with random velocities
-  if(AoI_received_)
-  {
-    for(size_t i = 0; i < particle_swarm_.size(); i++)
-    {
-      // initialize sensor poses randomly on perimeter
-      particle_swarm_.at(i).initializeSensorsOnPerimeter();
-      // initialize sensor velocities randomly
-      particle_swarm_.at(i).initializeRandomSensorVelocities();
-      // get calculated coverage
-      actual_coverage = particle_swarm_.at(i).getActualCoverage();
-      // check if the actual coverage is a new global best
-      if(actual_coverage > best_cov_)
-      {
-        best_cov_ = actual_coverage;
-        global_best_ = particle_swarm_.at(i);
-      }
-    }
-    // after the initialization step we're looking for a new global best solution
-    getGlobalBest();
-
-    // publish the actual global best visualization
-    marker_array_pub_.publish(global_best_.getVisualizationMarkers());
-  }
-}
-
-
-
-// function for the actual particle-swarm-optimization
-void sensor_placement_node::PSOptimize()
-{
-  //clock_t t_start;
-  //clock_t t_end;
-  //double  t_diff;
-
-  // PSO-iterator
-  int iter = 0;
-  std::vector<geometry_msgs::Pose> global_pose;
-
-  // iteration step
-  // continue calculation as long as there are iteration steps left and actual best coverage is
-  // lower than mininmal coverage to stop
-  while(iter < iter_max_ && best_cov_ < min_cov_)
-  {
-    global_pose = global_best_.getSolutionPositions();
-    // update each particle in vector
-    for(size_t i=0; i < particle_swarm_.size(); i++)
-    {
-      //t_start = clock();
-      particle_swarm_.at(i).resetTargetsWithInfoVar();
-      //t_end = clock();
-      //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
-      //ROS_INFO( "reset: %10.10f \n", t_diff);
-
-      // now we're ready to update the particle
-      //t_start = clock();
-      particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
-      //t_end = clock();
-      //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
-      //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
-    }
-    // after the update step we're looking for a new global best solution
-    getGlobalBest();
-
-    // publish the actual global best visualization
-    marker_array_pub_.publish(global_best_.getVisualizationMarkers());
-
-    ROS_INFO_STREAM("iteration: " << iter << " with coverage: " << best_cov_);
-
-    // increment PSO-iterator
-    iter++;
-  }
-
-}
-
-void sensor_placement_node::getGlobalBest()
-{
-  // a new global best solution is accepted if
-  // (1) the coverage is higher than the old best coverage or
-  // (2) the coverage is equal to the old best coverage but there are less targets covered by multiple sensors
-  for(size_t i=0; i < particle_swarm_.size(); i++)
-  {
-    if(particle_swarm_.at(i).getActualCoverage() > best_cov_)
-    {
-      best_cov_ = particle_swarm_.at(i).getActualCoverage();
-      global_best_ = particle_swarm_.at(i);
-      global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
-      best_particle_index_ = i;
-    }
-    else
-    {
-      if( (particle_swarm_.at(i).getActualCoverage() == best_cov_) && (particle_swarm_.at(i).getMultipleCoverageIndex() < global_best_multiple_coverage_ ))
-      {
-        best_cov_ = particle_swarm_.at(i).getActualCoverage();
-        global_best_ = particle_swarm_.at(i);
-        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
-        best_particle_index_ = i;
-      }
-    }
-  }
-}
-
-// callback function for the start PSO service
-bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
-{
-  // call static_map-service from map_server to get the actual map
-  sc_get_map_.waitForExistence();
-
-  nav_msgs::GetMap srv_map;
-
-  if(sc_get_map_.call(srv_map))
-  {
-    ROS_INFO("Map service called successfully");
-    map_received_ = true;
-
-    if(AoI_received_)
-    {
-      // get bounding box of area of interest
-      geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
-      // cropMap to boundingBox
-      cropMap(bound_box, srv_map.response.map, map_);
-    }
-    else
-    {
-      map_ = srv_map.response.map;
-
-      // if no AoI was specified, we consider the whole map to be the AoI
-      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
-    }
-
-    // publish map
-    map_.header.stamp = ros::Time::now();
-    map_pub_.publish(map_);
-    map_meta_pub_.publish(map_.info);
-  }
-  else
-  {
-    ROS_INFO("Failed to call map service");
-  }
-
-  if(map_received_)
-  {
-    ROS_INFO("Received a map");
-
-    // now create the lookup table based on the range of the sensor and the resolution of the map
-    int radius_in_cells = floor(sensor_range_ / map_.info.resolution);
-    lookup_table_ = createLookupTableCircle(radius_in_cells);
-  }
-
-  ROS_INFO("getting targets from specified map and area of interest!");
-
-  targets_saved_ = getTargets();
-
-  if(targets_saved_)
-  {
-    ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
-
-    ROS_INFO_STREAM("Saved " << targets_with_info_fix_.size() << " targets with info in std-vectors");
-  }
-
-
-  ROS_INFO("Initializing particle swarm");
-  initializePSO();
-
-  // publish global best visualization
-  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
-
-  ROS_INFO("Particle swarm Optimization step");
-  PSOptimize();
-
-  // get the PSO result as nav_msgs::Path in UTM coordinates and publish it
-  PSO_result_ = particle_swarm_.at(best_particle_index_).particle::getSolutionPositionsAsPath();
-
-  nav_path_pub_.publish(PSO_result_);
-
-  ROS_INFO_STREAM("Print the best solution as Path: " << PSO_result_);
-
-  // publish global best visualization
-  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
-
-  ROS_INFO("Clean up everything");
-  particle_swarm_.clear();
-
-  targets_with_info_fix_.clear();
-  targets_with_info_var_.clear();
-
-  target_num_ = 0;
-  best_cov_ = 0;
-  best_particle_index_ = 0;
-
-  ROS_INFO("PSO terminated successfully");
-
-  return true;
-
-}
-
-
-// callback function for the test service
-bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
-{
-  // call static_map-service from map_server to get the actual map
-  sc_get_map_.waitForExistence();
-
-  nav_msgs::GetMap srv_map;
-
-  if(sc_get_map_.call(srv_map))
-  {
-    ROS_INFO("Map service called successfully");
-
-    if(AoI_received_)
-    {
-      // get bounding box of area of interest
-      geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
-      // cropMap to boundingBox
-      cropMap(bound_box, srv_map.response.map, map_);
-      // publish cropped map
-      map_.header.stamp = ros::Time::now();
-      map_pub_.publish(map_);
-      map_meta_pub_.publish(map_.info);
-      map_received_ = true;
-    }
-    else
-    {
-      // if no AoI was specified, we consider the whole map to be the AoI
-      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
-      map_ = srv_map.response.map;
-      map_pub_.publish(map_);
-      map_meta_pub_.publish(map_.info);
-      map_received_ = true;
-    }
-  }
-  else
-  {
-    ROS_INFO("Failed to call map service");
-  }
-
-  if(map_received_)
-  {
-    ROS_INFO("Received a map");
-
-    // now create the lookup table based on the range of the sensor and the resolution of the map
-    int radius_in_cells = floor(5 / map_.info.resolution);
-    lookup_table_ = createLookupTableCircle(radius_in_cells);
-  }
-
-  ROS_INFO("getting targets from specified map and area of interest!");
-
-  targets_saved_ = getTargets();
-  if(targets_saved_)
-  {
-    ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
-
-    ROS_INFO_STREAM("Saved " << targets_with_info_fix_.size() << " targets with info in std-vectors");
-
-  }
-
-  // initialize pointer to dummy sensor_model
-  FOV_2D_model dummy_2D_model;
-  dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
-
-  particle_num_ = 1;
-  sensor_num_ = 1;
-  open_angles_.at(0) = 1.5 * PI;
-
-  // initialize dummy particle
-  particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
-  // initialize particle swarm with given number of particles containing given number of sensors
-
-  dummy_particle.setMap(map_);
-  dummy_particle.setAreaOfInterest(area_of_interest_);
-  dummy_particle.setForbiddenAreaVec(forbidden_area_vec_);
-  dummy_particle.setOpenAngles(open_angles_);
-  dummy_particle.setRange(5);
-
-  dummy_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
-  dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
-
-  ROS_INFO_STREAM("creating lookup tables for dummy particle..");
-  dummy_particle.setLookupTable(& lookup_table_);
-  ROS_INFO_STREAM("lookup tables created.");
-
-
-
-  particle_swarm_.assign(particle_num_,dummy_particle);
-
-  // initialze the global best solution
-  global_best_ = dummy_particle;
-
-  double actual_coverage = 0;
-
-  // initialize sensors randomly on perimeter for each particle with random velocities
-  if(AoI_received_)
-  {
-    for(size_t i = 0; i < particle_swarm_.size(); i++)
-    {
-      geometry_msgs::Pose test_pos = geometry_msgs::Pose();
-      test_pos.position.x = area_of_interest_.polygon.points.at(0).x+5;
-      test_pos.position.y = area_of_interest_.polygon.points.at(0).y+5;
-      test_pos.orientation = tf::createQuaternionMsgFromYaw(PI/4);
-
-      particle_swarm_.at(i).placeSensorsAtPos(test_pos);
-
-      global_best_ = particle_swarm_.at(i);
-
-      actual_coverage = global_best_.getActualCoverage();
-
-      ROS_INFO_STREAM("coverage: " << actual_coverage);
-
-      ROS_INFO_STREAM("orientation: " << test_pos.orientation);
-      ROS_INFO_STREAM("orientation-map: " << tf::getYaw(map_.info.origin.orientation));
-    }
-  }
-  // publish global best visualization
-  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
-
-  return true;
 }
 
 // get greedy search targets
@@ -1087,7 +758,6 @@ bool sensor_placement_node::getGSTargets()
   return result;
 }
 
-
 geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
 {
   //intializations
@@ -1149,6 +819,97 @@ geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
   return offset_AoI;
 }
 
+// function to initialize PSO-Algorithm
+void sensor_placement_node::initializePSO()
+{
+  // initialize pointer to dummy sensor_model
+  FOV_2D_model dummy_2D_model;
+  dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
+
+  // initialize dummy particle
+  particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
+
+  dummy_particle.setMap(map_);
+  dummy_particle.setAreaOfInterest(area_of_interest_);
+  dummy_particle.setForbiddenAreaVec(forbidden_area_vec_);
+  dummy_particle.setOpenAngles(open_angles_);
+  dummy_particle.setRange(sensor_range_);
+  dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
+  dummy_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
+  dummy_particle.setLookupTable(& lookup_table_);
+
+  // initialize particle swarm with given number of particles containing given number of sensors
+  particle_swarm_.assign(particle_num_,dummy_particle);
+  // initialize the global best solution
+  global_best_ = dummy_particle;
+
+  double actual_coverage = 0;
+
+  // initialize sensors randomly on perimeter for each particle with random velocities
+  if(AoI_received_)
+  {
+    for(size_t i = 0; i < particle_swarm_.size(); i++)
+    {
+      // initialize sensor poses randomly on perimeter
+      particle_swarm_.at(i).initializeSensorsOnPerimeter();
+      // initialize sensor velocities randomly
+      particle_swarm_.at(i).initializeRandomSensorVelocities();
+      // get calculated coverage
+      actual_coverage = particle_swarm_.at(i).getActualCoverage();
+      // check if the actual coverage is a new global best
+      if(actual_coverage > best_cov_)
+      {
+        best_cov_ = actual_coverage;
+        global_best_ = particle_swarm_.at(i);
+      }
+    }
+    // after the initialization step we're looking for a new global best solution
+    getGlobalBest();
+
+    // publish the actual global best visualization
+    marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+  }
+}
+
+// function to initialize PSO-Algorithm
+void sensor_placement_node::initializeGreedyPSO()
+{
+  // initialize pointer to dummy sensor_model
+  FOV_2D_model dummy_2D_model;
+  dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
+
+  // initialize dummy particle for GreedyPSO having only one sensor
+  particle dummy_particle = particle(1, target_num_, dummy_2D_model);
+
+  dummy_particle.setMap(map_);
+  dummy_particle.setAreaOfInterest(area_of_interest_);
+  dummy_particle.setForbiddenAreaVec(forbidden_area_vec_);
+  dummy_particle.setOpenAngles(open_angles_);
+  dummy_particle.setRange(sensor_range_);
+  dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
+  dummy_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
+  dummy_particle.setLookupTable(& lookup_table_);
+
+  // initialize particle swarm with given number of particles, each containing only one sensor
+  particle_swarm_.assign(particle_num_,dummy_particle);
+  // initialize the global best solution
+  global_best_ = dummy_particle;
+
+  // initialize dummy solution particle with given number of sensors
+  particle dummy_sol_particle = particle(sensor_num_, target_num_, dummy_2D_model);
+
+  dummy_sol_particle.setMap(map_);
+  dummy_sol_particle.setAreaOfInterest(area_of_interest_);
+  dummy_sol_particle.setForbiddenAreaVec(forbidden_area_vec_);
+  dummy_sol_particle.setOpenAngles(open_angles_);
+  dummy_sol_particle.setRange(sensor_range_);
+  dummy_sol_particle.setTargetsWithInfoVar(targets_with_info_var_);
+  dummy_sol_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
+  dummy_sol_particle.setLookupTable(& lookup_table_);
+
+  // set solution particle
+  sol_particle_ = dummy_sol_particle;
+}
 
 // function to initialize GS-Algorithm
 void sensor_placement_node::initializeGS()
@@ -1180,6 +941,153 @@ void sensor_placement_node::initializeGS()
 
 }
 
+// function for the actual particle-swarm-optimization
+void sensor_placement_node::PSOptimize()
+{
+
+  //clock_t t_start;
+  //clock_t t_end;
+  //double  t_diff;
+
+  // PSO-iterator
+  int iter = 0;
+  std::vector<geometry_msgs::Pose> global_pose;
+
+  // iteration step
+  // continue calculation as long as there are iteration steps left and actual best coverage is
+  // lower than mininmal coverage to stop
+  while(iter < iter_max_ && best_cov_ < min_cov_)
+  {
+    global_pose = global_best_.getSolutionPositions();
+    // update each particle in vector
+    for(size_t i=0; i < particle_swarm_.size(); i++)
+    {
+      //t_start = clock();
+      particle_swarm_.at(i).resetTargetsWithInfoVar();
+      //t_end = clock();
+      //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+      //ROS_INFO( "reset: %10.10f \n", t_diff);
+
+      // now we're ready to update the particle
+      //t_start = clock();
+      particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
+      //t_end = clock();
+      //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+      //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
+    }
+    // after the update step we're looking for a new global best solution
+    getGlobalBest();
+
+    // publish the actual global best visualization
+    marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+
+    ROS_INFO_STREAM("iteration: " << iter << " with coverage: " << best_cov_);
+
+    // increment PSO-iterator
+    iter++;
+  }
+
+}
+
+// function for the  particle-swarm-optimization with Greedy optimization
+void sensor_placement_node::GreedyPSOptimize()
+{
+  //clock_t t_start;
+  //clock_t t_end;
+  //double  t_diff;
+
+  //local variable
+  double actual_sensor_coverage = 0;
+  //PSO-iterator
+  int iter = 0;
+  std::vector<geometry_msgs::Pose> global_pose;
+  //initialize total coverage by GreedyPSO
+  total_gPSO_covered_targets_num_ = 0;
+
+  //iterate whole swarm optimization step as many times as the number of sensors
+  for (unsigned int sensor_iter = 0; sensor_iter<sensor_num_; sensor_iter++)
+  {
+    //reinitialize
+    iter=0;
+    best_cov_=0;
+
+    //place sensors randomly on perimeter for each particle with random velocities
+    if(AoI_received_)
+    {
+      for(size_t i = 0; i < particle_swarm_.size(); i++)
+      {
+        // initialize sensor poses randomly on perimeter
+        particle_swarm_.at(i).placeSensorsRandomlyOnPerimeter();
+        // initialize sensor velocities randomly
+        particle_swarm_.at(i).initializeRandomSensorVelocities();
+        // get calculated coverage
+        actual_sensor_coverage = particle_swarm_.at(i).getActualCoverage();
+        // check if the actual sensor coverage is a new global best
+        if(actual_sensor_coverage > best_cov_)
+        {
+          best_cov_ = actual_sensor_coverage;
+          global_best_ = particle_swarm_.at(i);
+        }
+      }
+      //after the initialization step we're looking for a new global best solution
+      getGlobalBest();
+
+      //publish the actual global best visualization
+      marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+    }
+
+
+    //iteration step
+    //continue calculation as long as there are iteration steps left and actual best coverage (per sensor) is
+    //lower than mininmal sensor coverage
+    while(iter < iter_max_per_sensor_ && best_cov_ < min_sensor_cov_)
+    {
+      global_pose = global_best_.getSolutionPositions();
+      // update each particle in vector
+      for(size_t i=0; i < particle_swarm_.size(); i++)
+      {
+        //t_start = clock();
+        particle_swarm_.at(i).resetTargetsWithInfoVar();                  //locked targets are not resetted
+        //t_end = clock();
+        //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+        //ROS_INFO( "reset: %10.10f \n", t_diff);
+
+        // now we're ready to update the particle
+        //t_start = clock();
+        particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
+        //t_end = clock();
+        //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+        //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
+      }
+      //after the update step we're looking for a new global best solution
+      getGlobalBest();
+
+      //publish the actual global best visualization
+      marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+
+      ROS_INFO_STREAM("sensor number: " << sensor_iter <<" iteration: " << iter << " with coverage: " << best_cov_);
+
+      //increment PSO-iterator
+      iter++;
+    }
+    //save the found solution into solution particle
+    sol_particle_.setSolutionSensors(global_best_.getActualSolution().at(0));  //global_best_ particle in GreedyPSO has only one sensor
+    //publish solution particle
+    marker_array_pub_.publish(sol_particle_.getSolutionlVisualizationMarkers());
+    //save the coverage by global best particle, first reset targets
+    global_best_.resetTargetsWithInfoVar();
+    //now lock targets that the global best is covering
+    global_best_.updateTargetsInfoRaytracing(0, true);
+    //calculate and print total coverage by GreedyPSO
+    total_gPSO_covered_targets_num_ = total_gPSO_covered_targets_num_+ global_best_.getNumOfTargetsCovered();
+    ROS_INFO_STREAM("Total coverage by GreedyPSO: " << (double) total_gPSO_covered_targets_num_/target_num_);
+    //set updated targets for whole particle swarm
+    for(size_t i = 0; i < particle_swarm_.size(); i++)
+    {
+      particle_swarm_.at(i).setTargetsWithInfoVar(global_best_.getTargetsWithInfoVar());
+    }
+  }
+}
 
 // function to run Greedy Search Algorithm
 void sensor_placement_node::runGS()
@@ -1210,11 +1118,36 @@ void sensor_placement_node::runGS()
 
 }
 
-
-// callback function for the start GS service
-bool sensor_placement_node::startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+void sensor_placement_node::getGlobalBest()
 {
+  // a new global best solution is accepted if
+  // (1) the coverage is higher than the old best coverage or
+  // (2) the coverage is equal to the old best coverage but there are less targets covered by multiple sensors
+  for(size_t i=0; i < particle_swarm_.size(); i++)
+  {
+    if(particle_swarm_.at(i).getActualCoverage() > best_cov_)
+    {
+      best_cov_ = particle_swarm_.at(i).getActualCoverage();
+      global_best_ = particle_swarm_.at(i);
+      global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+      best_particle_index_ = i;
+    }
+    else
+    {
+      if( (particle_swarm_.at(i).getActualCoverage() == best_cov_) && (particle_swarm_.at(i).getMultipleCoverageIndex() < global_best_multiple_coverage_ ))
+      {
+        best_cov_ = particle_swarm_.at(i).getActualCoverage();
+        global_best_ = particle_swarm_.at(i);
+        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+        best_particle_index_ = i;
+      }
+    }
+  }
+}
 
+// function to start map service and create look up tables
+void sensor_placement_node::initializeCallback()
+{
   // call static_map-service from map_server to get the actual map
   sc_get_map_.waitForExistence();
 
@@ -1258,6 +1191,124 @@ bool sensor_placement_node::startGSCallback(std_srvs::Empty::Request& req, std_s
     int radius_in_cells = floor(sensor_range_ / map_.info.resolution);
     lookup_table_ = createLookupTableCircle(radius_in_cells);
   }
+
+}
+
+// callback function for the start PSO service
+bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+  //start map service and create look up tables
+  initializeCallback();
+
+  ROS_INFO("getting targets from specified map and area of interest!");
+
+  targets_saved_ = getTargets();
+
+  if(targets_saved_)
+  {
+    ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
+
+    ROS_INFO_STREAM("Saved " << targets_with_info_fix_.size() << " targets with info in std-vectors");
+  }
+
+
+  ROS_INFO("Initializing particle swarm");
+  initializePSO();
+
+  // publish global best visualization
+  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+
+  ROS_INFO("Particle swarm Optimization step");
+  PSOptimize();
+
+  // get the PSO result as nav_msgs::Path in UTM coordinates and publish it
+  PSO_result_ = particle_swarm_.at(best_particle_index_).particle::getSolutionPositionsAsPath();
+
+  nav_path_pub_.publish(PSO_result_);
+
+  ROS_INFO_STREAM("Print the best solution as Path: " << PSO_result_);
+
+  // publish global best visualization
+  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+
+  ROS_INFO("Clean up everything");
+  particle_swarm_.clear();
+
+  targets_with_info_fix_.clear();
+  targets_with_info_var_.clear();
+
+  target_num_ = 0;
+  best_cov_ = 0;
+  best_particle_index_ = 0;
+
+  ROS_INFO("PSO terminated successfully");
+
+  return true;
+
+}
+
+// callback function for the start GreedyPSO service
+bool sensor_placement_node::startGreedyPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+  //start map service and create look up tables
+  initializeCallback();
+
+  ROS_INFO("getting targets from specified map and area of interest!");
+
+  targets_saved_ = getTargets();
+
+  if(targets_saved_)
+  {
+    ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
+
+    ROS_INFO_STREAM("Saved " << targets_with_info_fix_.size() << " targets with info in std-vectors");
+  }
+
+
+  ROS_INFO("Initializing greedy particle swarm");
+  initializeGreedyPSO();
+
+  //delete visualization markers from previous run
+  marker_array_pub_.publish(sol_particle_.deleteVisualizationMarkers());
+
+  //publish global best visualization
+  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+
+  ROS_INFO("Greedy Particle swarm Optimization step");
+  GreedyPSOptimize();
+
+  //optimization completed, now update original sensors vector to get solution as path
+  sol_particle_.updateOrigSensorsVec();
+
+  // get the PSO result as nav_msgs::Path in UTM coordinates and publish it
+  PSO_result_ = sol_particle_.particle::getSolutionPositionsAsPath();
+
+  nav_path_pub_.publish(PSO_result_);
+
+  ROS_INFO_STREAM("Print the best solution as Path: " << PSO_result_);
+
+  ROS_INFO("Clean up everything");
+  particle_swarm_.clear();
+
+  targets_with_info_fix_.clear();
+  targets_with_info_var_.clear();
+
+  target_num_ = 0;
+  best_cov_ = 0;
+  best_particle_index_ = 0;
+
+  ROS_INFO("GreedyPSO terminated successfully");
+
+  return true;
+
+}
+
+// callback function for the start GS service
+bool sensor_placement_node::startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+
+  //start map service and create look up tables
+  initializeCallback();
 
   ROS_INFO("getting targets from specified map and area of interest!");
 
@@ -1295,57 +1346,15 @@ bool sensor_placement_node::startGSCallback(std_srvs::Empty::Request& req, std_s
 
 }
 
-
 // callback function for the start GS service with offset parameter
-bool sensor_placement_node::startGSCallback2(seneka_sensor_placement::polygon_offset::Request& req, seneka_sensor_placement::polygon_offset::Response& res)
+bool sensor_placement_node::startGSWithOffsetCallback(seneka_sensor_placement::polygon_offset::Request& req, seneka_sensor_placement::polygon_offset::Response& res)
 {
   // save offset value received
   clipper_offset_value_ = req.offset_value;
   polygon_offset_val_received_=true;
 
-  // call static_map-service from map_server to get the actual map
-  sc_get_map_.waitForExistence();
-
-  nav_msgs::GetMap srv_map;
-
-  if(sc_get_map_.call(srv_map))
-  {
-    ROS_INFO("Map service called successfully");
-    map_received_ = true;
-
-    if(AoI_received_)
-    {
-      // get bounding box of area of interest
-      geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
-      // cropMap to boundingBox
-      cropMap(bound_box, srv_map.response.map, map_);
-    }
-    else
-    {
-      map_ = srv_map.response.map;
-
-      // if no AoI was specified, we consider the whole map to be the AoI
-      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
-    }
-
-    // publish map
-    map_.header.stamp = ros::Time::now();
-    map_pub_.publish(map_);
-    map_meta_pub_.publish(map_.info);
-  }
-  else
-  {
-    ROS_INFO("Failed to call map service");
-  }
-
-  if(map_received_)
-  {
-    ROS_INFO("Received a map");
-
-    // now create the lookup table based on the range of the sensor and the resolution of the map
-    int radius_in_cells = floor(sensor_range_ / map_.info.resolution);
-    lookup_table_ = createLookupTableCircle(radius_in_cells);
-  }
+  //start map service and create look up tables
+  initializeCallback();
 
   ROS_INFO("getting targets from specified map and area of interest!");
 
@@ -1391,6 +1400,127 @@ bool sensor_placement_node::clearFACallback(std_srvs::Empty::Request& req, std_s
   visualization_msgs::MarkerArray empty_marker;
   fa_marker_array_pub_.publish(empty_marker);
   fa_received_=false;
+  return true;
+}
+
+// callback function for the test service
+bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+  // call static_map-service from map_server to get the actual map
+  sc_get_map_.waitForExistence();
+
+  nav_msgs::GetMap srv_map;
+
+  if(sc_get_map_.call(srv_map))
+  {
+    ROS_INFO("Map service called successfully");
+
+    if(AoI_received_)
+    {
+      // get bounding box of area of interest
+      geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
+      // cropMap to boundingBox
+      cropMap(bound_box, srv_map.response.map, map_);
+      // publish cropped map
+      map_.header.stamp = ros::Time::now();
+      map_pub_.publish(map_);
+      map_meta_pub_.publish(map_.info);
+      map_received_ = true;
+    }
+    else
+    {
+      // if no AoI was specified, we consider the whole map to be the AoI
+      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
+      map_ = srv_map.response.map;
+      map_pub_.publish(map_);
+      map_meta_pub_.publish(map_.info);
+      map_received_ = true;
+    }
+  }
+  else
+  {
+    ROS_INFO("Failed to call map service");
+  }
+
+  if(map_received_)
+  {
+    ROS_INFO("Received a map");
+
+    // now create the lookup table based on the range of the sensor and the resolution of the map
+    int radius_in_cells = floor(5 / map_.info.resolution);
+    lookup_table_ = createLookupTableCircle(radius_in_cells);
+  }
+
+  ROS_INFO("getting targets from specified map and area of interest!");
+
+  targets_saved_ = getTargets();
+  if(targets_saved_)
+  {
+    ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
+
+    ROS_INFO_STREAM("Saved " << targets_with_info_fix_.size() << " targets with info in std-vectors");
+
+  }
+
+  // initialize pointer to dummy sensor_model
+  FOV_2D_model dummy_2D_model;
+  dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
+
+  particle_num_ = 1;
+  sensor_num_ = 1;
+  open_angles_.at(0) = 1.5 * PI;
+
+  // initialize dummy particle
+  particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
+  // initialize particle swarm with given number of particles containing given number of sensors
+
+  dummy_particle.setMap(map_);
+  dummy_particle.setAreaOfInterest(area_of_interest_);
+  dummy_particle.setForbiddenAreaVec(forbidden_area_vec_);
+  dummy_particle.setOpenAngles(open_angles_);
+  dummy_particle.setRange(5);
+
+  dummy_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
+  dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
+
+  ROS_INFO_STREAM("creating lookup tables for dummy particle..");
+  dummy_particle.setLookupTable(& lookup_table_);
+  ROS_INFO_STREAM("lookup tables created.");
+
+
+
+  particle_swarm_.assign(particle_num_,dummy_particle);
+
+  // initialze the global best solution
+  global_best_ = dummy_particle;
+
+  double actual_coverage = 0;
+
+  // initialize sensors randomly on perimeter for each particle with random velocities
+  if(AoI_received_)
+  {
+    for(size_t i = 0; i < particle_swarm_.size(); i++)
+    {
+      geometry_msgs::Pose test_pos = geometry_msgs::Pose();
+      test_pos.position.x = area_of_interest_.polygon.points.at(0).x+5;
+      test_pos.position.y = area_of_interest_.polygon.points.at(0).y+5;
+      test_pos.orientation = tf::createQuaternionMsgFromYaw(PI/4);
+
+      particle_swarm_.at(i).placeSensorsAtPos(test_pos);
+
+      global_best_ = particle_swarm_.at(i);
+
+      actual_coverage = global_best_.getActualCoverage();
+
+      ROS_INFO_STREAM("coverage: " << actual_coverage);
+
+      ROS_INFO_STREAM("orientation: " << test_pos.orientation);
+      ROS_INFO_STREAM("orientation-map: " << tf::getYaw(map_.info.origin.orientation));
+    }
+  }
+  // publish global best visualization
+  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+
   return true;
 }
 
