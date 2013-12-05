@@ -1046,21 +1046,22 @@ void sensor_placement_node::GreedyPSOptimize()
     {
       global_pose = global_best_.getSolutionPositions();
       // update each particle in vector
-      for(size_t i=0; i < particle_swarm_.size(); i++)
-      {
-        //t_start = clock();
-        particle_swarm_.at(i).resetTargetsWithInfoVar();                  //locked targets are not resetted
-        //t_end = clock();
-        //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
-        //ROS_INFO( "reset: %10.10f \n", t_diff);
+      #pragma omp parallel for
+        for(size_t i=0; i < particle_swarm_.size(); i++)
+        {
+          //t_start = clock();
+          particle_swarm_.at(i).resetTargetsWithInfoVar();                  //locked targets are not resetted
+          //t_end = clock();
+          //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+          //ROS_INFO( "reset: %10.10f \n", t_diff);
 
-        // now we're ready to update the particle
-        //t_start = clock();
-        particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
-        //t_end = clock();
-        //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
-        //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
-      }
+          // now we're ready to update the particle
+          //t_start = clock();
+          particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
+          //t_end = clock();
+          //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+          //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
+        }
       //after the update step we're looking for a new global best solution
       getGlobalBest();
 
