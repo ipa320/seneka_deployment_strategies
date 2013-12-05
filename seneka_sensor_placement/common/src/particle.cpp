@@ -239,11 +239,12 @@ void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets
 // function to reset the variable information for all targets
 void particle::resetTargetsWithInfoVar()
 {
-  for(int i=0; i<targets_with_info_var_.size(); i++)
-  {
-    if (targets_with_info_var_.at(i).no_reset==false)
-      targets_with_info_var_.at(i).reset();
-  }
+  #pragma omp parallel for //-b- TODO: test this
+    for(int i=0; i<targets_with_info_var_.size(); i++)
+    {
+      if (targets_with_info_var_.at(i).no_reset==false)
+        targets_with_info_var_.at(i).reset();
+    }
 
   covered_targets_num_ = 0;
   multiple_coverage_ = 0;
@@ -862,6 +863,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
     int lookup_table_x, lookup_table_y;
 
     //go through ray
+
     for(cell=0; cell < sensors_.at(sensor_index).getLookupTable()->at(ray).size(); cell++)
     {
       lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell).x;
@@ -1128,7 +1130,7 @@ bool particle::newOrientationAccepted(size_t sensor_index, geometry_msgs::Pose n
   return result;
 }
 
-// function to update the original sensors vector; to show solution as path after GreedyPSO optimization step -b-
+// function to update the original sensors vector; to show solution as path after GreedyPSO optimization step
 void particle::updateOrigSensorsVec()
 {
   if(!sol_sensors_.empty())

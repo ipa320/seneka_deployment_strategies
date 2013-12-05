@@ -49,6 +49,7 @@
  ****************************************************************/
 
 #include <sensor_placement_node.h>
+#include <omp.h>
 
 // constructor
 sensor_placement_node::sensor_placement_node()
@@ -806,7 +807,7 @@ geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
       ROS_ERROR("wrong output from ClipperLib::OffsetPolygons function");
     }
 
-    // show output -b-
+    // show output
     for (int i=0; i<offset_AoI.polygon.points.size(); i++)
     {
       ROS_INFO_STREAM("offset_AoI point " << i << " (" << offset_AoI.polygon.points.at(i).x << "," << offset_AoI.polygon.points.at(i).y << ")" ) ;
@@ -822,6 +823,29 @@ geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
 // function to initialize PSO-Algorithm
 void sensor_placement_node::initializePSO()
 {
+
+/*
+  int check=0;
+  for (int ww=0; ww<10; ww++)
+  {
+    check=0;
+    #pragma omp parallel for
+      for (int q=0; q<10; q++)
+      {
+        #pragma omp atomic
+          check++;
+        //  ROS_INFO_STREAM("value of check: "<<check << " q is: " <<q);
+
+
+        //#pragma omp flush(check)
+        //ROS_INFO_STREAM("Hello from thread " << omp_get_thread_num() << " nthreads " << omp_get_num_threads());
+      }
+
+    ROS_INFO_STREAM("final value of check" << check);
+  }
+*/
+
+
   // initialize pointer to dummy sensor_model
   FOV_2D_model dummy_2D_model;
   dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
@@ -848,7 +872,7 @@ void sensor_placement_node::initializePSO()
   // initialize sensors randomly on perimeter for each particle with random velocities
   if(AoI_received_)
   {
-    for(size_t i = 0; i < particle_swarm_.size(); i++)
+    for(size_t i = 0; i < particle_swarm_.size(); i++)        //-b-np-
     {
       // initialize sensor poses randomly on perimeter
       particle_swarm_.at(i).initializeSensorsOnPerimeter();
@@ -945,9 +969,9 @@ void sensor_placement_node::initializeGS()
 void sensor_placement_node::PSOptimize()
 {
 
-  //clock_t t_start;
-  //clock_t t_end;
-  //double  t_diff;
+  clock_t t_start;
+  clock_t t_end;
+  double  t_diff;
 
   // PSO-iterator
   int iter = 0;
@@ -960,21 +984,23 @@ void sensor_placement_node::PSOptimize()
   {
     global_pose = global_best_.getSolutionPositions();
     // update each particle in vector
-    for(size_t i=0; i < particle_swarm_.size(); i++)
-    {
-      //t_start = clock();
-      particle_swarm_.at(i).resetTargetsWithInfoVar();
-      //t_end = clock();
-      //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
-      //ROS_INFO( "reset: %10.10f \n", t_diff);
+    #pragma omp parallel for
+      for(size_t i=0; i < particle_swarm_.size(); i++)
+      {
+        //t_start = clock();
+        particle_swarm_.at(i).resetTargetsWithInfoVar();
+        //t_end = clock();
+        //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+        //ROS_INFO( "reset: %10.10f \n", t_diff);
 
-      // now we're ready to update the particle
-      //t_start = clock();
-      particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
-      //t_end = clock();
-      //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
-      //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
-    }
+        // now we're ready to update the particle
+        //t_start = clock();
+        particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
+        //t_end = clock();
+        //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+        //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
+      }
+
     // after the update step we're looking for a new global best solution
     getGlobalBest();
 
