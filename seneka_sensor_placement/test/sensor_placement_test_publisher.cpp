@@ -169,7 +169,7 @@ public:
       if(!forbidden_area_poly_vec_.at(i).polygon.points.empty())
       {
         forbidden_area_pub_.publish(forbidden_area_poly_vec_.at(i));
-        ROS_INFO_STREAM("publishing forbidden area " << i);   //-b-
+        ROS_INFO_STREAM("publishing forbidden area " << i);
         ros::Duration(0.2).sleep();   //-b- NOTE: arbitrary delay between publishing polygons
       }
       else

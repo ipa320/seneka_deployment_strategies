@@ -806,7 +806,7 @@ geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
       ROS_ERROR("wrong output from ClipperLib::OffsetPolygons function");
     }
 
-    // show output -b-
+    // show output
     for (int i=0; i<offset_AoI.polygon.points.size(); i++)
     {
       ROS_INFO_STREAM("offset_AoI point " << i << " (" << offset_AoI.polygon.points.at(i).x << "," << offset_AoI.polygon.points.at(i).y << ")" ) ;
@@ -945,9 +945,9 @@ void sensor_placement_node::initializeGS()
 void sensor_placement_node::PSOptimize()
 {
 
-  //clock_t t_start;
-  //clock_t t_end;
-  //double  t_diff;
+  clock_t t_start;
+  clock_t t_end;
+  double  t_diff;
 
   // PSO-iterator
   int iter = 0;
@@ -960,21 +960,23 @@ void sensor_placement_node::PSOptimize()
   {
     global_pose = global_best_.getSolutionPositions();
     // update each particle in vector
-    for(size_t i=0; i < particle_swarm_.size(); i++)
-    {
-      //t_start = clock();
-      particle_swarm_.at(i).resetTargetsWithInfoVar();
-      //t_end = clock();
-      //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
-      //ROS_INFO( "reset: %10.10f \n", t_diff);
+    #pragma omp parallel for
+      for(size_t i=0; i < particle_swarm_.size(); i++)
+      {
+        //t_start = clock();
+        particle_swarm_.at(i).resetTargetsWithInfoVar();
+        //t_end = clock();
+        //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+        //ROS_INFO( "reset: %10.10f \n", t_diff);
 
-      // now we're ready to update the particle
-      //t_start = clock();
-      particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
-      //t_end = clock();
-      //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
-      //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
-    }
+        // now we're ready to update the particle
+        //t_start = clock();
+        particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
+        //t_end = clock();
+        //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+        //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
+      }
+
     // after the update step we're looking for a new global best solution
     getGlobalBest();
 
@@ -1044,21 +1046,22 @@ void sensor_placement_node::GreedyPSOptimize()
     {
       global_pose = global_best_.getSolutionPositions();
       // update each particle in vector
-      for(size_t i=0; i < particle_swarm_.size(); i++)
-      {
-        //t_start = clock();
-        particle_swarm_.at(i).resetTargetsWithInfoVar();                  //locked targets are not resetted
-        //t_end = clock();
-        //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
-        //ROS_INFO( "reset: %10.10f \n", t_diff);
+      #pragma omp parallel for
+        for(size_t i=0; i < particle_swarm_.size(); i++)
+        {
+          //t_start = clock();
+          particle_swarm_.at(i).resetTargetsWithInfoVar();                  //locked targets are not resetted
+          //t_end = clock();
+          //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+          //ROS_INFO( "reset: %10.10f \n", t_diff);
 
-        // now we're ready to update the particle
-        //t_start = clock();
-        particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
-        //t_end = clock();
-        //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
-        //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
-      }
+          // now we're ready to update the particle
+          //t_start = clock();
+          particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
+          //t_end = clock();
+          //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+          //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
+        }
       //after the update step we're looking for a new global best solution
       getGlobalBest();
 

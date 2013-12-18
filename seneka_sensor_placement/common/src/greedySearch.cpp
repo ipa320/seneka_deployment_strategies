@@ -102,7 +102,6 @@ greedySearch::~greedySearch(){}
 void greedySearch::newGreedyPlacement(size_t sensor_index)
 {
   bool update_covered_info;
-  unsigned int max_cov_ind;
   int placement_point_id;
   int num_of_slices;
   int coverage;
@@ -168,11 +167,10 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
   //reset max targets covered information
   resetGSpool();
 
-  max_cov_ind=0;
   max_sum=0;
 
   //place the current sensor on all points in GS pool one by one and calculate coverge
-  for (size_t point_id=0; point_id<GS_pool_.size(); point_id=point_id++)
+  for (size_t point_id=0; point_id<GS_pool_.size(); point_id++)
   {
     //clear data
     coverage_vec_.clear();
@@ -181,8 +179,7 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
     new_pose.position.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
     new_pose.position.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
     new_pose.position.z = 0;
-
-    for (double alpha=0; alpha<2*PI; alpha=alpha+gs_ang_r[0]) //-b-
+    for (double alpha=0; alpha<2*PI; alpha=alpha+gs_ang_r[0]) //-b- TODO: change loop variable type
     {
       //look around in all directions with resolution of the slice
       new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha);
