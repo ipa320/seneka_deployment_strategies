@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf_conversions
   std_srvs
   message_generation
+  actionlib_msgs
 )
 
 find_package(OpenMP REQUIRED)
@@ -30,9 +31,17 @@ add_service_files(
     polygon_offset.srv
 )
 
+add_action_files(
+  DIRECTORY
+    action
+   FILES
+    test.action
+)
+
 generate_messages(
   DEPENDENCIES
     std_msgs
+    actionlib_msgs
 )
 
 catkin_package(
