@@ -16,8 +16,11 @@ find_package(catkin REQUIRED COMPONENTS
   tf_conversions
   std_srvs
   message_generation
+  actionlib
   actionlib_msgs
 )
+
+find_package(Boost REQUIRED COMPONENTS system)
 
 find_package(OpenMP REQUIRED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -61,6 +64,7 @@ catkin_package(
     visualization_msgs
     tf
     std_srvs
+    actionlib_msgs
 #  DEPENDS system_lib
 )
 
@@ -72,6 +76,7 @@ include_directories(
   common/include/seneka_sensor_placement
   third_party/clipper_library/include/clipper
   ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
 
@@ -86,6 +91,8 @@ add_executable(sensor_placement_node 	src/sensor_placement_node.cpp
 					)
 add_executable(sensor_placement_test	test/sensor_placement_test_publisher.cpp)
 
+add_executable(sensor_placement_action_server src/sensor_placement_action_server.cpp)
+
 add_dependencies(sensor_placement_node  seneka_sensor_placement_gencpp)
 
 ## Specify libraries to link a library or executable target against
@@ -95,6 +102,10 @@ add_dependencies(sensor_placement_node  seneka_sensor_placement_gencpp)
  target_link_libraries(sensor_placement_test
    ${catkin_LIBRARIES}
  )
+ 
+ target_link_libraries(sensor_placement_action_server
+  ${catkin_LIBRARIES}
+)
 
 ## Mark executables and/or libraries for installation
  install(TARGETS sensor_placement_node sensor_placement_test

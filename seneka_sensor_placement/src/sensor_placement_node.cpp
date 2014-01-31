@@ -50,12 +50,20 @@
 
 #include <sensor_placement_node.h>
 
+
+
 // constructor
 sensor_placement_node::sensor_placement_node()
+: ac_("test", true)
 {
   // create node handles
   nh_ = ros::NodeHandle();
   pnh_ = ros::NodeHandle("~");
+
+  ROS_INFO("Waiting for action server to start.");
+  // wait for the action server to start
+  ac_.waitForServer(); //will wait for infinite time
+  ROS_INFO("Action server started, ready to send goals");
 
   // ros subscribers
 
@@ -1200,6 +1208,13 @@ void sensor_placement_node::initializeCallback()
 // callback function for the start PSO service
 bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
+  //--------test----------
+
+  // send a goal to the action
+  seneka_sensor_placement::testGoal goal;
+  goal.order = 20;
+  ac_.sendGoal(goal);
+
   //start map service and create look up tables
   initializeCallback();
 
@@ -1591,6 +1606,16 @@ int main(int argc, char **argv)
 {
   // initialize ros and specify node name
   ros::init(argc, argv, "sensor_placement_node");
+
+  // create the action client
+  // action client takes two arguments: the server name to connect to and a boolean option to automatically spin a thread
+  //actionlib::SimpleActionClient<seneka_sensor_placement::testAction> ac("test", true);
+
+ // ROS_INFO("Waiting for action server to start.");
+ // // wait for the action server to start
+  //ac.waitForServer(); //will wait for infinite time
+
+  //ROS_INFO("Action server started, ready to send goals");
 
   // create Node Class
   sensor_placement_node my_placement_node;

@@ -83,6 +83,10 @@
 #include <clipper.hpp>
 #include <seneka_sensor_placement/polygon_offset.h>
 
+#include <actionlib/client/simple_action_client.h>
+#include <actionlib/client/terminal_state.h>
+#include <seneka_sensor_placement/testAction.h>
+
 using namespace std;
 using namespace seneka_utilities;
 
@@ -235,6 +239,9 @@ public:
 
   // declaration of ros service clients
   ros::ServiceClient sc_get_map_;
+
+  // create the action client
+  actionlib::SimpleActionClient<seneka_sensor_placement::testAction> ac_;
 
   /* ----------------------------------- */
   /* ----------- functions ------------- */

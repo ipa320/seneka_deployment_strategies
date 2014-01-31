@@ -78,13 +78,7 @@ Visualization Manager:
       Marker Topic: /GS_targets_grid
       Name: GS_Targets
       Namespaces:
-        grid0: true
-        grid1: true
-        grid2: false
-        grid3: false
-        grid4: false
-        grid5: false
-        grid6: false
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray

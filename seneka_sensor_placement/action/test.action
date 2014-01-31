@@ -1,8 +1,18 @@
+#goal definition
+int32 order
+---
+#result definition
+int32[] sequence
+---
+#feedback
+int32[] sequence
+
+
 #define the goal
-uint32 service_id #specify which service is requested
----
+#uint32 service_id #specify which service is requested
+#---
 #define the result
-float32 coverage
----
+#float32 coverage
+#---
 #define a feedback message
-float32 current_coverage
+#float32 current_coverage
