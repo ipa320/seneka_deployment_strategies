@@ -13,9 +13,9 @@
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
- * Author: Florian Mirus, email:Florian.Mirus@ipa.fhg.de
+ * Author: Muhammad Bilal Chughtai, email:Muhammad.Chughtai@ipa.fraunhofer.de
  *
- * Date of creation: April 2013
+ * Date of creation: January 2014
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
@@ -48,8 +48,10 @@
  *
  ****************************************************************/
 
-#ifndef SENSOR_PLACEMENT_H
-#define SENSOR_PLACEMENT_H
+#ifndef SENSOR_PLACEMENT_ACTION_SERVER_H
+#define SENSOR_PLACEMENT_ACTION_SERVER_H
+
+//-b- remove unused header files
 
 // standard includes
 #include <iostream>
@@ -74,7 +76,6 @@
 #include <std_srvs/Empty.h>
 #include <nav_msgs/GetMap.h>
 
-
 // external includes
 #include <sensor_model.h>
 #include <particle.h>
@@ -83,14 +84,79 @@
 #include <clipper.hpp>
 #include <seneka_sensor_placement/polygon_offset.h>
 
-#include <actionlib/client/simple_action_client.h>
-#include <actionlib/client/terminal_state.h>
+// action server includes
+#include <actionlib/server/simple_action_server.h>
 #include <seneka_sensor_placement/sensorPlacementAction.h>
+
 
 using namespace std;
 using namespace seneka_utilities;
 
+class sensorPlacementAction
+{
+protected:
 
+  ros::NodeHandle nh_;
+  // NodeHandle instance must be created before this line. Otherwise strange error may occur.
+  actionlib::SimpleActionServer<seneka_sensor_placement::sensorPlacementAction> as_;
+  std::string action_name_;
+  // create messages that are used to published feedback/result
+  seneka_sensor_placement::sensorPlacementFeedback feedback_;
+  seneka_sensor_placement::sensorPlacementResult result_;
+
+public:
+
+  //constructor
+  sensorPlacementAction(std::string name);
+
+  //destructor
+  ~sensorPlacementAction(void);
+
+  //callback function is passed a pointer to the message
+  //Note: This is a boost shared pointer, given by appending "ConstPtr" to the end of the goal message type.
+  void executeCB(const seneka_sensor_placement::sensorPlacementGoalConstPtr &goal);
+
+
+
+/*
+
+  //new executeCB for all services
+  void executeCB(const seneka_sensor_placement::testGoalConstPtr &goal)
+  {
+    // helper variables
+    ros::Rate r(1);         //-b- purpose?
+    bool success = true;
+
+
+
+
+
+
+
+
+
+
+  }
+
+*/
+
+
+};  //end sensorPlacementAction
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 class sensor_placement_node
 {
 private:
@@ -214,6 +280,10 @@ public:
   /* --------- ROS Variables ----------- */
   /* ----------------------------------- */
 
+
+/*
+
+
   // create node handles
   ros::NodeHandle nh_, pnh_;
 
@@ -241,11 +311,14 @@ public:
   ros::ServiceClient sc_get_map_;
 
   // create the action client
-  actionlib::SimpleActionClient<seneka_sensor_placement::sensorPlacementAction> ac_;
+  actionlib::SimpleActionClient<seneka_sensor_placement::testAction> ac_;
 
   /* ----------------------------------- */
   /* ----------- functions ------------- */
   /* ----------------------------------- */
+
+/*
+
 
   // function to get the ROS parameters from yaml-file
   void getParams();
@@ -292,6 +365,9 @@ public:
   /* ----------------------------------- */
 
 
+/*
+
+
   // callback function for the start PSO service
   bool startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
@@ -316,4 +392,5 @@ public:
 
 };
 
-#endif
+*/
+

@@ -54,7 +54,7 @@
 
 // constructor
 sensor_placement_node::sensor_placement_node()
-: ac_("test", true)
+: ac_("sensorPlacementActionServer", true)    //client constructor also takes two arguments, the server name to connect to and a boolean option to automatically spin a thread
 {
   // create node handles
   nh_ = ros::NodeHandle();
@@ -63,7 +63,7 @@ sensor_placement_node::sensor_placement_node()
   ROS_INFO("Waiting for action server to start.");
   // wait for the action server to start
   ac_.waitForServer(); //will wait for infinite time
-  ROS_INFO("Action server started, ready to send goals");
+  ROS_INFO("Action server started, ready to send goal");
 
   // ros subscribers
 
@@ -1211,8 +1211,8 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   //--------test----------
 
   // send a goal to the action
-  seneka_sensor_placement::testGoal goal;
-  goal.order = 20;
+  seneka_sensor_placement::sensorPlacementGoal goal;
+  goal.service_id = 1;
   ac_.sendGoal(goal);
 
   //start map service and create look up tables
@@ -1609,7 +1609,7 @@ int main(int argc, char **argv)
 
   // create the action client
   // action client takes two arguments: the server name to connect to and a boolean option to automatically spin a thread
-  //actionlib::SimpleActionClient<seneka_sensor_placement::testAction> ac("test", true);
+  //actionlib::SimpleActionClient<seneka_sensor_placement::sensorPlacementAction> ac("test", true);
 
  // ROS_INFO("Waiting for action server to start.");
  // // wait for the action server to start

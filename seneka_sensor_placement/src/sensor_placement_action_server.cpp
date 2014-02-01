@@ -49,49 +49,106 @@
  ****************************************************************/
 
 
-#include <ros/ros.h>
-#include <actionlib/server/simple_action_server.h>
-#include <seneka_sensor_placement/testAction.h>
+#include <sensor_placement_action_server.h>
 
-class testAction
-{
-protected:
-
-  ros::NodeHandle nh_;
-  // NodeHandle instance must be created before this line. Otherwise strange error may occur.
-  actionlib::SimpleActionServer<seneka_sensor_placement::testAction> as_;
-  std::string action_name_;
-  // create messages that are used to published feedback/result
-  seneka_sensor_placement:: testFeedback feedback_;
-  seneka_sensor_placement::testResult result_;
-
-public:
-
-
-  testAction(std::string name) :
-    //action server takes arguments of a node handle, name of the action, optionally an executeCB
-    as_(nh_, name, boost::bind(&testAction::executeCB, this, _1), false), // _1 ??
-    action_name_(name)
+//constructor
+sensorPlacementAction::sensorPlacementAction(std::string name)
+:
+  //initializer list
+  //action_server takes arguments of a node handle, name of the action, optionally an executeCB
+  as_(nh_, name, boost::bind(&sensorPlacementAction::executeCB, this, _1), false), // -b-_1 ??
+  action_name_(name)
   {
     as_.start();
   }
 
-  ~testAction(void)
-  {
-  }
+//destructor
+sensorPlacementAction::~sensorPlacementAction(void){}
 
   //callback function is passed a pointer to the message
   //Note: This is a boost shared pointer, given by appending "ConstPtr" to the end of the goal message type.
+void sensorPlacementAction::executeCB(const seneka_sensor_placement::sensorPlacementGoalConstPtr &goal)
+{
+  // helper variables
+  ros::Rate r(1);   //-b- why needed??
+  bool success = true;
+
+  switch (goal->service_id)
+  {
+    case 1:
+    {
+      //startPSO
+      ROS_INFO("Starting PSO action");
+
+      // check that preempt has not been requested by the client    -b- !important step for preemption
+      if (as_.isPreemptRequested() || !ros::ok())
+      {
+        ROS_INFO("%s: Preempted", action_name_.c_str());
+        // set the action state to preempted
+        as_.setPreempted();
+        success = false;
+        break;
+
+        // -b- NOTE:  Setting the rate at which the action server checks for preemption requests is left to the implementor of the server.
+      }
+
+      //do stuff
+
+
+      break;
+    }
+
+
+    default:
+    {
+      ROS_ERROR("invlaid service_id");
+    }
+
+  }
+
+  if(success)
+  {
+    //show results here -b-
+    ROS_INFO("%s: Succeeded", action_name_.c_str());
+    // set the action state to succeeded
+    as_.setSucceeded(result_);
+  }
+
+
+
+
+
+
+
+
+}
+
+
+//main program
+int main(int argc, char** argv)
+{
+  ros::init(argc, argv, "sensorPlacementActionServer");   //-b- suitable name ?
+
+  sensorPlacementAction sensorPlacementActionServer(ros::this_node::getName());
+  ros::spin();
+
+  return 0;
+}
+
+
+/*
+
+  //old executeCB for
   void executeCB(const seneka_sensor_placement::testGoalConstPtr &goal)
   {
-    // helper variables
-    ros::Rate r(1);
-    bool success = true;
 
     // push_back the seeds for the fibonacci sequence
     feedback_.sequence.clear();
     feedback_.sequence.push_back(0);
     feedback_.sequence.push_back(1);
+
+    if (goal->startPSO == true)
+    ROS_INFO("startPSO goal recieved");
 
     // publish info to the console for the user
     ROS_INFO("%s: Executing, creating test sequence of order %i with seeds %i, %i", action_name_.c_str(), goal->order, feedback_.sequence[0], feedback_.sequence[1]);
@@ -127,15 +184,9 @@ public:
   }
 
 
-};
+*/
 
 
-int main(int argc, char** argv)
-{
-  ros::init(argc, argv, "test");
 
-  testAction test(ros::this_node::getName());
-  ros::spin();
 
-  return 0;
-}
+

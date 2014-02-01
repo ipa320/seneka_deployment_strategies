@@ -38,7 +38,7 @@ add_action_files(
   DIRECTORY
     action
    FILES
-    test.action
+    sensorPlacement.action
 )
 
 generate_messages(

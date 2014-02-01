@@ -1,8 +1,9 @@
 #goal definition
-int32 order
+uint32 service_id
+bool cancel_service
 ---
 #result definition
-int32[] sequence
+float32 coverage
 ---
 #feedback
 int32[] sequence
