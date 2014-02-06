@@ -23,7 +23,6 @@
   <run_depend>map_server</run_depend>
   <run_depend>seneka_environments</run_depend>
   <run_depend>seneka_sensor_placement</run_depend>
-  <run_depend>seneka_strategies_bringup</run_depend>
   <run_depend>seneka_strategies_config</run_depend>
   <run_depend>rviz</run_depend>
 
