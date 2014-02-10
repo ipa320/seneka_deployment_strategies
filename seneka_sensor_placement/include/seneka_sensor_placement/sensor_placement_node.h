@@ -74,6 +74,7 @@
 #include <std_srvs/Empty.h>
 #include <nav_msgs/GetMap.h>
 
+//#include <boost/bind.hpp>
 
 // external includes
 #include <sensor_model.h>
@@ -329,8 +330,10 @@ public:
   //Note: This is a boost shared pointer, given by appending "ConstPtr" to the end of the goal message type.
   void executeGoalCB(const seneka_sensor_placement::sensorPlacementGoalConstPtr &goal);
 
+  void preemptCB();
 
-  void cancelGoalIfRequested();
+
+  bool preemptRequested();
 
 protected:    //-b- why protected?
   // NodeHandle instance must be created before this line. Otherwise strange error may occur.

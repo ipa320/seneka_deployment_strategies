@@ -52,25 +52,20 @@
 
 // constructor
 sensor_placement_node::sensor_placement_node()
-//-b-r: ac_("sensorPlacementActionServer", true)    //client constructor also takes two arguments, the server name to connect to and a boolean option to automatically spin a thread
-:
-as_(nh_, "sensorPlacementActionServer", boost::bind(&sensor_placement_node::executeGoalCB, this, _1), false), // -b-_1 ??
-  action_name_("sensorPlacementAction")
+//initializer list
+:as_(
+     nh_,                                                                             //node handle
+     "sensorPlacementActionServer",                                                   //server name to connect
+     boost::bind(&sensor_placement_node::executeGoalCB, this, _1),                    //bind the goal callback function
+     false),                                                                         //option to automatically spin a thread
+     action_name_("sensorPlacementAction")
 {
-
-  as_.start();
 
   // create node handles
   nh_ = ros::NodeHandle();
   pnh_ = ros::NodeHandle("~");
 
- // ROS_INFO("Waiting for action server to start."); -b-r
-//  // wait for the action server to start  -b-r
- // ac_.waitForServer(); //will wait for infinite time  -b-r
- // ROS_INFO("Action server started, ready to send goal");  -b-r
-
   // ros subscribers
-
   AoI_sub_ = nh_.subscribe("in_AoI_poly", 1,
                            &sensor_placement_node::AoICB, this);
   forbidden_area_sub_ = nh_.subscribe("in_forbidden_area", 1,
@@ -95,6 +90,13 @@ as_(nh_, "sensorPlacementActionServer", boost::bind(&sensor_placement_node::exec
   ss_test_ = nh_.advertiseService("TestService", &sensor_placement_node::testServiceCallback, this);
   // ros service clients
   sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>("static_map");
+
+  //register the goal and feeback callbacks
+  //as_.registerGoalCallback(boost::bind(&sensor_placement_node::executeGoalCB, this));
+  as_.registerPreemptCallback(boost::bind(&sensor_placement_node::preemptCB, this));
+
+  //start the action server
+  as_.start();
 
   // get parameters from parameter server if possible
   getParams();
@@ -130,20 +132,27 @@ as_(nh_, "sensorPlacementActionServer", boost::bind(&sensor_placement_node::exec
 sensor_placement_node::~sensor_placement_node(){}
 
 
-void sensor_placement_node::cancelGoalIfRequested()
+//this function cancels the goal if requested by action client and returns true
+bool sensor_placement_node::preemptRequested()
 {
   // check that preempt has not been requested by the client    -b- !important step for preemption
   if (as_.isPreemptRequested() || !ros::ok())
   {
     ROS_INFO("%s: Preempted", action_name_.c_str());
-    ROS_INFO("Action preempted");
     // set the action state to preempted
     as_.setPreempted();
     action_success_ = false;
-   // break;
+    return true;
 
     // -b- NOTE:  Setting the rate at which the action server checks for preemption requests is left to the implementor of the server.
   }
+  return false;
+}
+
+void sensor_placement_node::preemptCB()
+{
+  ROS_INFO("Cancel goal request received");
+    //can be used later to do anything before getting aborted
 }
 
 
@@ -178,6 +187,7 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
     // set the action state to succeeded
     as_.setSucceeded(result_);
   }
+  else ROS_INFO("action was not successful");
 
 
 
@@ -1032,13 +1042,11 @@ void sensor_placement_node::PSOptimize()
   std::vector<geometry_msgs::Pose> global_pose;
 
   // iteration step
-  // continue calculation as long as there are iteration steps left and actual best coverage is
+  // continue calculation as long as there are iteratio stneps left and actual best coverage is
   // lower than mininmal coverage to stop
-  while(iter < iter_max_ && best_cov_ < min_cov_)
+  // and goal cancellation is not requested by action client
+  while(iter < iter_max_ && best_cov_ < min_cov_ && !preemptRequested())
   {
-    //preempt the optimization step if requested
-    cancelGoalIfRequested();
-
     global_pose = global_best_.getSolutionPositions();
     // update each particle in vector
     #pragma omp parallel for
