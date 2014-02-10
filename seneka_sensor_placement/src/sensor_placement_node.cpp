@@ -50,20 +50,24 @@
 
 #include <sensor_placement_node.h>
 
-
-
 // constructor
 sensor_placement_node::sensor_placement_node()
-: ac_("sensorPlacementActionServer", true)    //client constructor also takes two arguments, the server name to connect to and a boolean option to automatically spin a thread
+//-b-r: ac_("sensorPlacementActionServer", true)    //client constructor also takes two arguments, the server name to connect to and a boolean option to automatically spin a thread
+:
+as_(nh_, "sensorPlacementActionServer", boost::bind(&sensor_placement_node::executeGoalCB, this, _1), false), // -b-_1 ??
+  action_name_("sensorPlacementAction")
 {
+
+  as_.start();
+
   // create node handles
   nh_ = ros::NodeHandle();
   pnh_ = ros::NodeHandle("~");
 
-  ROS_INFO("Waiting for action server to start.");
-  // wait for the action server to start
-  ac_.waitForServer(); //will wait for infinite time
-  ROS_INFO("Action server started, ready to send goal");
+ // ROS_INFO("Waiting for action server to start."); -b-r
+//  // wait for the action server to start  -b-r
+ // ac_.waitForServer(); //will wait for infinite time  -b-r
+ // ROS_INFO("Action server started, ready to send goal");  -b-r
 
   // ros subscribers
 
@@ -117,10 +121,76 @@ sensor_placement_node::sensor_placement_node()
   fa_received_ = false;
   polygon_offset_val_received_=false;
 
+  //initialize action success variable
+  action_success_ = true;
+
 }
 
 // destructor
 sensor_placement_node::~sensor_placement_node(){}
+
+
+void sensor_placement_node::cancelGoalIfRequested()
+{
+  // check that preempt has not been requested by the client    -b- !important step for preemption
+  if (as_.isPreemptRequested() || !ros::ok())
+  {
+    ROS_INFO("%s: Preempted", action_name_.c_str());
+    ROS_INFO("Action preempted");
+    // set the action state to preempted
+    as_.setPreempted();
+    action_success_ = false;
+   // break;
+
+    // -b- NOTE:  Setting the rate at which the action server checks for preemption requests is left to the implementor of the server.
+  }
+}
+
+
+void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorPlacementGoalConstPtr &goal)
+{
+  // helper variables
+  ros::Rate r(1);   //-b- why needed??
+
+
+  switch (goal->service_id)
+  {
+    case 1:
+    {
+      //startPSO
+      ROS_INFO("Starting PSO action");
+      startPSOCallback(empty_req_, empty_res_);
+      break;
+    }
+
+
+    default:
+    {
+      ROS_ERROR("invlaid service_id");
+    }
+
+  }
+
+  if(action_success_)
+  {
+    //show results here -b-
+    ROS_INFO("%s: Succeeded", action_name_.c_str());
+    // set the action state to succeeded
+    as_.setSucceeded(result_);
+  }
+
+
+
+
+}
+
+
+
+
+
+
+
+
 
 // function to get the ROS parameters from yaml-file
 void sensor_placement_node::getParams()
@@ -966,6 +1036,9 @@ void sensor_placement_node::PSOptimize()
   // lower than mininmal coverage to stop
   while(iter < iter_max_ && best_cov_ < min_cov_)
   {
+    //preempt the optimization step if requested
+    cancelGoalIfRequested();
+
     global_pose = global_best_.getSolutionPositions();
     // update each particle in vector
     #pragma omp parallel for
@@ -1211,9 +1284,9 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   //--------test----------
 
   // send a goal to the action
-  seneka_sensor_placement::sensorPlacementGoal goal;
-  goal.service_id = 1;
-  ac_.sendGoal(goal);
+//  seneka_sensor_placement::sensorPlacementGoal goal; -b-
+//  goal.service_id = 1;
+// ac_.sendGoal(goal);
 
   //start map service and create look up tables
   initializeCallback();

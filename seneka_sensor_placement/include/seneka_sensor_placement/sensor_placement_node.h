@@ -83,8 +83,9 @@
 #include <clipper.hpp>
 #include <seneka_sensor_placement/polygon_offset.h>
 
-#include <actionlib/client/simple_action_client.h>
-#include <actionlib/client/terminal_state.h>
+//#include <actionlib/client/simple_action_client.h>
+#include <actionlib/server/simple_action_server.h>
+//#include <actionlib/client/terminal_state.h>
 #include <seneka_sensor_placement/sensorPlacementAction.h>
 
 using namespace std;
@@ -202,6 +203,16 @@ private:
   // optimization result as nav_msgs::Path
   nav_msgs::Path PSO_result_;
 
+  // empty request and response variables
+  std_srvs::Empty::Request empty_req_;
+  std_srvs::Empty::Response empty_res_;
+
+  //variable to check action weather or not action was completed successfully
+  bool action_success_;
+
+
+
+
 public:
 
   // constructor
@@ -241,7 +252,7 @@ public:
   ros::ServiceClient sc_get_map_;
 
   // create the action client
-  actionlib::SimpleActionClient<seneka_sensor_placement::sensorPlacementAction> ac_;
+  //actionlib::SimpleActionClient<seneka_sensor_placement::sensorPlacementAction> ac_;    -b-r
 
   /* ----------------------------------- */
   /* ----------- functions ------------- */
@@ -313,6 +324,21 @@ public:
   // callback functions
   void AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI);
   void forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_areas);
+
+  //callback function is passed a pointer to the message
+  //Note: This is a boost shared pointer, given by appending "ConstPtr" to the end of the goal message type.
+  void executeGoalCB(const seneka_sensor_placement::sensorPlacementGoalConstPtr &goal);
+
+
+  void cancelGoalIfRequested();
+
+protected:    //-b- why protected?
+  // NodeHandle instance must be created before this line. Otherwise strange error may occur.
+  actionlib::SimpleActionServer<seneka_sensor_placement::sensorPlacementAction> as_;
+  std::string action_name_;
+  // create messages that are used to published feedback/result
+  seneka_sensor_placement::sensorPlacementFeedback feedback_; // -b- need to be global?
+  seneka_sensor_placement::sensorPlacementResult result_;
 
 };
 
