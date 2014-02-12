@@ -166,6 +166,8 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
   // helper variables
   ros::Rate r(1);   //-b- why needed??
 
+  //reset default action_success_ status to be true
+  action_success_ = true;
 
   switch (goal->service_id)
   {
@@ -233,7 +235,8 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
     // set the action state to succeeded
     as_.setSucceeded(action_result_);
   }
-  else ROS_INFO("Action preempted or invalid service ID"); //-b-
+  else
+    ROS_INFO("Action was not completed"); //-b-
  // as_.setAborted(action_result_);
 }
 
