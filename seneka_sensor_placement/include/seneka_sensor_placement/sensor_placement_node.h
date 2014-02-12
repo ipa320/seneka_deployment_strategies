@@ -82,7 +82,7 @@
 #include <seneka_utilities.h>
 #include <greedySearch.h>
 #include <clipper.hpp>
-#include <seneka_sensor_placement/polygon_offset.h>
+//#include <seneka_sensor_placement/polygon_offset.h>
 
 //#include <actionlib/client/simple_action_client.h>
 #include <actionlib/server/simple_action_server.h>
@@ -209,7 +209,7 @@ private:
   std_srvs::Empty::Response empty_res_;
 
   //variable to check action weather or not action was completed successfully
-  bool action_success_;
+  bool action_success_;         // -b- check its use
 
 
 
@@ -241,6 +241,7 @@ public:
   ros::Publisher offset_AoI_pub_;
   ros::Publisher fa_marker_array_pub_;
 
+/*
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;
   ros::ServiceServer ss_start_GreedyPSO_;
@@ -248,6 +249,7 @@ public:
   ros::ServiceServer ss_start_GS_with_offset_;
   ros::ServiceServer ss_clear_fa_vec_;
   ros::ServiceServer ss_test_;
+*/
 
   // declaration of ros service clients
   ros::ServiceClient sc_get_map_;
@@ -303,7 +305,7 @@ public:
   /* --------- ROS Callbacks ----------- */
   /* ----------------------------------- */
 
-
+/*
   // callback function for the start PSO service
   bool startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
@@ -321,6 +323,25 @@ public:
 
   // callback function for the test service
   bool testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+*/
+
+  // callback function for the start PSO action
+  bool startPSOCallback();
+
+  // callback function for the start GreedyPSO action
+  bool startGreedyPSOCallback();
+
+  // callback function for the start GS action
+  bool startGSCallback();
+
+  // callback function for the start GS action with offset parameter
+  bool startGSWithOffsetCallback();
+
+  // callback function for clearing all forbidden areas
+  bool clearFACallback();
+
+  // callback function for the test action
+  bool testServiceCallback();
 
   // callback functions
   void AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI);
@@ -340,8 +361,8 @@ protected:    //-b- why protected?
   actionlib::SimpleActionServer<seneka_sensor_placement::sensorPlacementAction> as_;
   std::string action_name_;
   // create messages that are used to published feedback/result
-  seneka_sensor_placement::sensorPlacementFeedback feedback_; // -b- need to be global?
-  seneka_sensor_placement::sensorPlacementResult result_;
+  seneka_sensor_placement::sensorPlacementFeedback action_feedback_; // -b- need to be global?
+  seneka_sensor_placement::sensorPlacementResult action_result_;
 
 };
 

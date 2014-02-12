@@ -56,6 +56,7 @@
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
 
+#include <seneka_sensor_placement/polygon_offset.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
 #include <seneka_sensor_placement/sensorPlacementAction.h>
@@ -64,35 +65,50 @@ class sensor_placement_interface
 {
   private:
   // create the action client
-  //client constructor also takes two arguments, the server name to connect to and a boolean option to automatically spin a thread
   actionlib::SimpleActionClient<seneka_sensor_placement::sensorPlacementAction> ac_;
 
-
-
   public:
-
-  //standard constructor
+  // standard constructor
   sensor_placement_interface();
-  //standard destructor
+  // standard destructor
   ~sensor_placement_interface();
-
-  // service callback functions
-  bool startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
-  bool cancelGoalCallBack(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
-
 
   // create node handles
   ros::NodeHandle nh_;
 
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;
+  ros::ServiceServer ss_start_GreedyPSO_;
+  ros::ServiceServer ss_start_GS_;
+  ros::ServiceServer ss_start_GS_with_offset_;
+  ros::ServiceServer ss_clear_fa_vec_;
+  ros::ServiceServer ss_test_;
   ros::ServiceServer ss_cancel_action_;
 
+  /* ------------------------------------------- */
+  /* --------- ROS Service Callbacks ----------- */
+  /* ------------------------------------------- */
 
+  // callback function for the start PSO service
+  bool startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
+  // callback function for the start GreedyPSO service
+  bool startGreedyPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
+  // callback function for the start GS service
+  bool startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
+  // callback function for the start GS service with offset parameter
+  bool startGSWithOffsetCallback(seneka_sensor_placement::polygon_offset::Request& req, seneka_sensor_placement::polygon_offset::Response& res);
 
+  // callback function for clearing all forbidden areas
+  bool clearFACallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+
+  // callback function for the test service
+  bool testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+
+  // callback function for the cancelling active service
+  bool cancelGoalCallBack(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
 };
 

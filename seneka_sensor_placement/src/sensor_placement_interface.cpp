@@ -61,41 +61,97 @@
 sensor_placement_interface::sensor_placement_interface()
 :ac_("sensorPlacementActionServer", true)
 {
-  ss_start_PSO_ = nh_.advertiseService("StartPSO_ac", &sensor_placement_interface::startPSOCallback, this);
+  // ros service servers
+  ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_interface::startPSOCallback, this);
+  ss_start_GreedyPSO_ = nh_.advertiseService("StartGreedyPSO", &sensor_placement_interface::startGreedyPSOCallback, this);
+  ss_start_GS_ = nh_.advertiseService("StartGS", &sensor_placement_interface::startGSCallback, this);
+  ss_start_GS_with_offset_ = nh_.advertiseService("StartGS_with_offset_polygon", &sensor_placement_interface::startGSWithOffsetCallback, this);
+  ss_clear_fa_vec_ = nh_.advertiseService("ClearForbiddenAreas", &sensor_placement_interface::clearFACallback, this);
+  ss_test_ = nh_.advertiseService("TestService", &sensor_placement_interface::testServiceCallback, this);
   ss_cancel_action_ = nh_.advertiseService("CancelAction", &sensor_placement_interface::cancelGoalCallBack, this);
 
   ROS_INFO("Waiting for action server to start.");
   // wait for the action server to start
   ac_.waitForServer(); //will wait for infinite time
   ROS_INFO("Action server started, ready to send goals");
-
-
 }
 
 // destructor
 sensor_placement_interface::~sensor_placement_interface(){}
 
-
+// callback function for the start PSO service
 bool sensor_placement_interface::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  ROS_INFO("PSO service call received");
-    // send a goal to the action
+  ROS_INFO("'PSO' service call received");
+  // send goal
   seneka_sensor_placement::sensorPlacementGoal goal;
   goal.service_id = 1;
   ac_.sendGoal(goal);
   return true;
 }
 
+// callback function for the start GreedyPSO service
+bool sensor_placement_interface::startGreedyPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+  ROS_INFO("'GreedyPSO' service call received");
+  // send goal
+  seneka_sensor_placement::sensorPlacementGoal goal;
+  goal.service_id = 2;
+  ac_.sendGoal(goal);
+  return true;
+}
+
+// callback function for the start GS service
+bool sensor_placement_interface::startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+  ROS_INFO("'GreedySearch' service call received");
+  // send goal
+  seneka_sensor_placement::sensorPlacementGoal goal;
+  goal.service_id = 3;
+  ac_.sendGoal(goal);
+  return true;
+}
+
+// callback function for the start GS service with offset parameter
+bool sensor_placement_interface::startGSWithOffsetCallback(seneka_sensor_placement::polygon_offset::Request& req, seneka_sensor_placement::polygon_offset::Response& res)
+{
+  ROS_INFO("'GreedySearch with OFFSET Parameter' service call received");
+  // send goal
+  seneka_sensor_placement::sensorPlacementGoal goal;
+  goal.service_id = 4;
+  goal.service_input_arg = req.offset_value;
+  //res.success = true;
+  ac_.sendGoal(goal);
+  res.success=true;
+  return true;
+}
+
+// callback function for clearing all forbidden areas
+bool sensor_placement_interface::clearFACallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+  ROS_INFO("'Clear Forbidden Areas' service call received");
+  // send goal
+  seneka_sensor_placement::sensorPlacementGoal goal;
+  goal.service_id = 5;
+  ac_.sendGoal(goal);
+  return true;
+}
+
+bool sensor_placement_interface::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+  ROS_INFO("TestService call received");
+  // send goal
+  seneka_sensor_placement::sensorPlacementGoal goal;
+  goal.service_id = 6;
+  ac_.sendGoal(goal);
+  return true;
+}
+
 bool sensor_placement_interface::cancelGoalCallBack(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  ROS_INFO("Cancel action request received");
- /* // send a goal to the action
-  seneka_sensor_placement::sensorPlacementGoal goal;
-  goal.cancel_service = true;
-  ac_.sendGoal(goal);
-*/
-ac_.cancelGoal();
-return true;
+  ROS_INFO("CancelAction request received");
+  ac_.cancelGoal();
+  return true;
 }
 
 

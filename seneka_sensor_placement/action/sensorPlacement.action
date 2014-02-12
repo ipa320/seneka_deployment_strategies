@@ -1,12 +1,12 @@
 #goal definition
 uint32 service_id
-bool cancel_service
+uint32 service_input_arg
 ---
 #result definition
 float32 coverage
 ---
 #feedback
-int32[] sequence
+float32 current_coverage
 
 
 #define the goal
