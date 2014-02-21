@@ -97,9 +97,47 @@ greedySearch::greedySearch(int num_of_sensors, int num_of_targets, FOV_2D_model 
 
 greedySearch::~greedySearch(){}
 
+// function to set action server
+void greedySearch::setActionServer(actionlib::SimpleActionServer<seneka_sensor_placement::sensorPlacementAction> * action_server)
+{
+  //copy action server
+  as_ = action_server;
+
+
+/*
+  if (as_->isPreemptRequested())
+  {
+    ROS_INFO("preempt requested - test action server pointer successful");
+  }
+  else
+  {
+    ROS_INFO("preempt not requested - test action server pointer successful");
+  }
+*/
+}
+
+/*
+//this function cancels the goal if requested by action client and returns true
+bool greedySearch::preemptRequested()
+{
+  // check that preempt has not been requested by the client    -b- !important step for preemption
+  if (as_->isPreemptRequested())
+  {
+    // set the action state to preempted, if it is not already preempted
+    if (as_->isActive())
+    {
+      ROS_INFO("Action preempted while executing Greedy Search");
+      as_->setPreempted();
+    }
+    return true;
+  }
+  return false;
+}
+*/
+
 
 // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
-void greedySearch::newGreedyPlacement(size_t sensor_index)
+bool greedySearch::newGreedyPlacement(size_t sensor_index)
 {
   bool update_covered_info;
   int placement_point_id;
@@ -186,6 +224,22 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
       sensors_.at(sensor_index).setSensorPose(new_pose);
       coverage = getCoverageRaytracing(sensor_index);         //get coverage at new_pose
       coverage_vec_.push_back(coverage);                      //save in coverage in coverage_vec_
+
+      //check if preemption is requested
+      if (as_->isPreemptRequested())
+      {
+        // set the action state to preempted, if it is śtill active
+        if (as_->isActive())
+        {
+         // ROS_INFO("Action preempted while executing Greedy Search");
+          as_->setPreempted();
+        }
+        //prepare to return
+        //reset the sensor open angles
+        new_ang_r[0] = num_of_slices*gs_ang_r[0];
+        setOpenAngles(new_ang_r);
+        return false;
+      }
     }
 
     //now find N consecutive slices that give maximum coverage. (N: num_of_slices)
@@ -223,6 +277,8 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
   //now update the 'covered' info
   update_covered_info = true;
   updateGSpointsRaytracing(sensor_index, placement_point_id, update_covered_info);
+
+  return true;
 
 }
 

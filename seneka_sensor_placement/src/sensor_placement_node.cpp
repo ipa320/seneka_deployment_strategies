@@ -146,7 +146,7 @@ bool sensor_placement_node::preemptRequested()
       ROS_INFO("%s: Preempted", action_name_.c_str());
       as_.setPreempted();
     }
-    //set success to be false
+    //set action success to be false
     action_success_ = false;
     return true;
   }
@@ -155,7 +155,7 @@ bool sensor_placement_node::preemptRequested()
 
 void sensor_placement_node::preemptCB()
 {
-  ROS_INFO("Cancel goal request received");
+  ROS_INFO("Cancel action request received");
   //can be used later to do anything before getting aborted
   //TODO: improvement: if the thread which is executing action can be preempted from here, than preemption will be quite fast
 }
@@ -1063,7 +1063,8 @@ void sensor_placement_node::initializeGS()
   GS_solution.setRange(sensor_range_);
   GS_solution.setPointInfoVec(point_info_vec_, target_num_);
   GS_solution.setGSpool(GS_pool_);
-  GS_solution.setLookupTable(& lookup_table_);
+  GS_solution.setLookupTable(&lookup_table_);
+  GS_solution.setActionServer(&as_);
 
   if (!GS_pool_.empty())
   {
@@ -1208,6 +1209,8 @@ void sensor_placement_node::GreedyPSOptimize()
       //increment PSO-iterator
       iter++;
     }
+    //break out of for loop if preemption is requested
+    if (as_.isPreemptRequested()) break;
     //save the found solution into solution particle
     sol_particle_.setSolutionSensors(global_best_.getActualSolution().at(0));  //global_best_ particle in GreedyPSO has only one sensor
     //publish solution particle
@@ -1224,11 +1227,6 @@ void sensor_placement_node::GreedyPSOptimize()
     {
       particle_swarm_.at(i).setTargetsWithInfoVar(global_best_.getTargetsWithInfoVar());
     }
-
-    //break out of for loop
-    if (as_.isPreemptRequested())
-      break;
-
   }
 }
 
@@ -1240,18 +1238,28 @@ void sensor_placement_node::runGS()
   ros::Time start_time;
   ros::Duration end_time;
   std::vector<double> open_angles(2,0);
+  bool placement_success = true;
+
+
 
   //start placing sensors one by one according to greedy algorithm
   for(size_t sensor_index = 0; sensor_index < sensor_num_; sensor_index++)
   {
     //preempt if cancel action is received
-    if (preemptRequested())
-      break;
+   // if (preemptRequested())
+   //   break;
 
     //note start time for greedy search
     start_time = ros::Time::now();
     //do Greedy Search and place sensor on the max coverage pose
-    GS_solution.newGreedyPlacement(sensor_index);
+    placement_success = GS_solution.newGreedyPlacement(sensor_index);
+    //if placement was preempted, break out of the loop
+    if (placement_success == false)
+    {
+      ROS_INFO("%s: Preempted", action_name_.c_str());
+      action_success_ = false;
+      break;
+    }
     //note end time for greedy_search
     end_time= ros::Time::now() - start_time;
     //publish the solution
