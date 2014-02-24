@@ -65,12 +65,11 @@
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <actionlib/server/simple_action_server.h>
 
 // external includes
 #include <sensor_model.h>
 #include <seneka_utilities.h>
-
-#include <actionlib/server/simple_action_server.h>
 #include <seneka_sensor_placement/sensorPlacementAction.h>
 
 
@@ -122,7 +121,7 @@ private:
   const nav_msgs::OccupancyGrid * pMap_;
 
 protected:
-  // NodeHandle instance must be created before this line. Otherwise strange error may occur.
+  // create a pointer to point to the sensor placement action server
   actionlib::SimpleActionServer<seneka_sensor_placement::sensorPlacementAction> * as_;
 
 public:
@@ -150,8 +149,6 @@ public:
   // function to calculate coverage achieved
   double calGScoverage();
 
-  //this function cancels the goal if requested by action client and returns true
-  //bool preemptRequested();
 
   // ************************ getter functions ************************
 

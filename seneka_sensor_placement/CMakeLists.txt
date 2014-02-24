@@ -91,8 +91,6 @@ add_executable(sensor_placement_node 	src/sensor_placement_node.cpp
 					)
 add_executable(sensor_placement_test	test/sensor_placement_test_publisher.cpp)
 
-#add_executable(sensor_placement_action_server src/sensor_placement_action_server.cpp) -remove later
-
 add_executable(sensor_placement_interface src/sensor_placement_interface.cpp)
 
 add_dependencies(sensor_placement_node  seneka_sensor_placement_gencpp)

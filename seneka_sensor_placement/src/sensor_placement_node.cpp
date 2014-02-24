@@ -55,10 +55,10 @@ sensor_placement_node::sensor_placement_node()
 //initializer list
 :as_(
      nh_,                                                                             //node handle
-     "sensorPlacementActionServer",                                                   //server name to connect
+     "sensorPlacementActionServer",                                                   //name the action server
      boost::bind(&sensor_placement_node::executeGoalCB, this, _1),                    //bind the goal callback function
      false),                                                                         //option to automatically spin a thread
-     action_name_("sensorPlacementAction")
+     action_name_("sensorPlacementAction")                                            //name the action
 {
 
   // create node handles
@@ -80,22 +80,15 @@ sensor_placement_node::sensor_placement_node()
   GS_targets_grid_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("GS_targets_grid",1,true);
   fa_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("fa_marker_array",1,true);
 
-/*
-  // ros service servers
-  ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_node::startPSOCallback, this);
-  ss_start_GreedyPSO_ = nh_.advertiseService("StartGreedyPSO", &sensor_placement_node::startGreedyPSOCallback, this);
-  ss_start_GS_ = nh_.advertiseService("StartGS", &sensor_placement_node::startGSCallback, this);
-  ss_start_GS_with_offset_ = nh_.advertiseService("StartGS_with_offset_polygon", &sensor_placement_node::startGSWithOffsetCallback, this);
-  ss_clear_fa_vec_ = nh_.advertiseService("ClearForbiddenAreas", &sensor_placement_node::clearFACallback, this);
-  ss_test_ = nh_.advertiseService("TestService", &sensor_placement_node::testServiceCallback, this);
- */
 
   // ros service clients
   sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>("static_map");
 
-  //register the goal and feeback callbacks
-  //as_.registerGoalCallback(boost::bind(&sensor_placement_node::executeGoalCB, this));
+  //register the preempt callback function
   as_.registerPreemptCallback(boost::bind(&sensor_placement_node::preemptCB, this));
+
+  //initialize action success variable
+  action_success_ = true;
 
   //start the action server
   as_.start();
@@ -125,127 +118,10 @@ sensor_placement_node::sensor_placement_node()
   fa_received_ = false;
   polygon_offset_val_received_=false;
 
-  //initialize action success variable
-  action_success_ = true;
-
 }
 
 // destructor
 sensor_placement_node::~sensor_placement_node(){}
-
-
-//this function cancels the goal if requested by action client and returns true
-bool sensor_placement_node::preemptRequested()
-{
-  // check that preempt has not been requested by the client    -b- !important step for preemption
-  if (as_.isPreemptRequested() || !ros::ok())
-  {
-    // set the action state to preempted, if it is active
-    if (as_.isActive())
-    {
-      ROS_INFO("%s: Preempted", action_name_.c_str());
-      as_.setPreempted();
-    }
-    //set action success to be false
-    action_success_ = false;
-    return true;
-  }
-  return false;
-}
-
-void sensor_placement_node::preemptCB()
-{
-  ROS_INFO("Cancel action request received");
-  //can be used later to do anything before getting aborted
-  //TODO: improvement: if the thread which is executing action can be preempted from here, than preemption will be quite fast
-}
-
-
-void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorPlacementGoalConstPtr &goal)
-{
-  // helper variables
-  ros::Rate r(1);   //-b- why needed??
-
-  //reset default action_success_ status to be true
-  action_success_ = true;
-
-  switch (goal->service_id)
-  {
-    case 1:
-    {
-      ROS_INFO("Starting 'PSO' action");
-      startPSOCallback();
-     // action_result_ = best_cov_;
-      break;
-    }
-
-    case 2:
-    {
-      ROS_INFO("Starting 'GreeyPSO' action");
-      startGreedyPSOCallback();
-    //  action_result_ = (double) total_gPSO_covered_targets_num_/target_num_);
-      break;
-    }
-
-    case 3:
-    {
-      ROS_INFO("Starting 'GreadySearch' action");
-      startGSCallback();
-     // action_result_ = GS_solution.calGScoverage();
-      break;
-    }
-
-    case 4:
-    {
-      ROS_INFO("Starting 'GreedySearch with OFFSET parameter' action");
-      // save offset value received
-      clipper_offset_value_ = goal->service_input_arg;
-      polygon_offset_val_received_=true;
-      startGSWithOffsetCallback();
-    //  action_result_ = GS_solution.calGScoverage();
-      break;
-    }
-
-    case 5:
-    {
-      ROS_INFO("Performing 'Clear forbidden areas' action");
-      clearFACallback();
-      break;
-    }
-
-
-    case 6:
-    {
-      ROS_INFO("Starting 'Test' action");
-      testServiceCallback();
-      break;
-    }
-
-    default:
-    {
-      ROS_ERROR("Invlaid service_id");
-      action_success_ = false;
-    }
-  }
-
-  if(action_success_)
-  {
-    //show results here -b-
-    ROS_INFO("%s: Succeeded", action_name_.c_str());
-    // set the action state to succeeded
-    as_.setSucceeded(action_result_);
-  }
-  else
-    ROS_INFO("Action was not completed"); //-b-
- // as_.setAborted(action_result_);
-}
-
-
-
-
-
-
-
 
 
 // function to get the ROS parameters from yaml-file
@@ -367,6 +243,113 @@ void sensor_placement_node::getParams()
   }
   pnh_.param("GS_target_offset",GS_target_offset_, 5.0);
 }
+
+
+// function to cancel the goal if requested by action client (sensor_placement_interface) and returns true
+bool sensor_placement_node::preemptRequested()
+{
+  // check if action preempt has been requested by the client
+  if (as_.isPreemptRequested() || !ros::ok())
+  {
+    // if the action is still in active state, set the action state to preempted now
+    if (as_.isActive())
+    {
+      ROS_INFO("%s: Preempted", action_name_.c_str());
+      as_.setPreempted();
+    }
+    //set action success to be false
+    action_success_ = false;
+    return true;
+  }
+  return false;
+}
+
+
+// function that gets executed immediately when the action is preempted
+void sensor_placement_node::preemptCB()
+{
+  ROS_INFO("Cancel action request received");
+  //can be used later to do anything before the action gets aborted
+}
+
+// goal callback function
+void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorPlacementGoalConstPtr &goal)
+{
+  // helper variables
+  ros::Rate r(1);
+
+  //reset default action_success_ status to be true
+  action_success_ = true;
+
+  switch (goal->service_id)
+  {
+    case 1:
+    {
+      ROS_INFO("Starting 'PSO' action");
+      startPSOCallback();
+      // action_result_ = best_cov_;
+      break;
+    }
+
+    case 2:
+    {
+      ROS_INFO("Starting 'GreeyPSO' action");
+      startGreedyPSOCallback();
+      // action_result_ = (double) total_gPSO_covered_targets_num_/target_num_);
+      break;
+    }
+
+    case 3:
+    {
+      ROS_INFO("Starting 'GreadySearch' action");
+      startGSCallback();
+      // action_result_ = GS_solution.calGScoverage();
+      break;
+    }
+
+    case 4:
+    {
+      ROS_INFO("Starting 'GreedySearch_with_offset_polygon' action");
+      // save offset value received
+      clipper_offset_value_ = goal->service_input_arg;
+      polygon_offset_val_received_=true;
+      startGSWithOffsetCallback();
+      // action_result_ = GS_solution.calGScoverage();
+      break;
+    }
+
+    case 5:
+    {
+      ROS_INFO("Performing 'Clear_forbidden_areas' action");
+      clearFACallback();
+      break;
+    }
+
+
+    case 6:
+    {
+      ROS_INFO("Starting 'Test' action");
+      testServiceCallback();
+      break;
+    }
+
+    default:
+    {
+      ROS_ERROR("Invlaid service_id");
+      action_success_ = false;
+    }
+  }
+
+  if(action_success_)
+  {
+    ROS_INFO("Action Succeeded");
+    // set the action state to succeeded
+    as_.setSucceeded(); //-b- result?
+  }
+  else
+    ROS_INFO("Action was not completed");
+}
+
 
 
 bool sensor_placement_node::getTargets()
@@ -1089,7 +1072,7 @@ void sensor_placement_node::PSOptimize()
   std::vector<geometry_msgs::Pose> global_pose;
 
   // iteration step
-  // continue calculation as long as there are iteratio stneps left and actual best coverage is
+  // continue calculation as long as there are iteration steps left and actual best coverage is
   // lower than mininmal coverage to stop
   // and goal cancellation is not requested by action client
   while(iter < iter_max_ && best_cov_ < min_cov_ && !preemptRequested())
@@ -1178,6 +1161,7 @@ void sensor_placement_node::GreedyPSOptimize()
     //iteration step
     //continue calculation as long as there are iteration steps left and actual best coverage (per sensor) is
     //lower than mininmal sensor coverage
+    // and goal cancellation is not requested by action client
     while(iter < iter_max_per_sensor_ && best_cov_ < min_sensor_cov_ && !preemptRequested())
     {
       global_pose = global_best_.getSolutionPositions();
@@ -1222,7 +1206,7 @@ void sensor_placement_node::GreedyPSOptimize()
     //calculate and print total coverage by GreedyPSO
     total_gPSO_covered_targets_num_ = total_gPSO_covered_targets_num_+ global_best_.getNumOfTargetsCovered();
     ROS_INFO_STREAM("Total coverage by GreedyPSO: " << (double) total_gPSO_covered_targets_num_/target_num_);
-    //set updated targets for whole particle swarm
+    //set updated targets for whole particle swarm. TODO: use a pointer for targetsWithInfo instead of each particle having their own targetsWithInfo object
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
       particle_swarm_.at(i).setTargetsWithInfoVar(global_best_.getTargetsWithInfoVar());
@@ -1245,10 +1229,6 @@ void sensor_placement_node::runGS()
   //start placing sensors one by one according to greedy algorithm
   for(size_t sensor_index = 0; sensor_index < sensor_num_; sensor_index++)
   {
-    //preempt if cancel action is received
-   // if (preemptRequested())
-   //   break;
-
     //note start time for greedy search
     start_time = ros::Time::now();
     //do Greedy Search and place sensor on the max coverage pose
@@ -1352,13 +1332,6 @@ void sensor_placement_node::initializeCallback()
 // callback function for the start PSO service
 bool sensor_placement_node::startPSOCallback()
 {
-  //--------test----------
-
-  // send a goal to the action
-//  seneka_sensor_placement::sensorPlacementGoal goal; -b-
-//  goal.service_id = 1;
-// ac_.sendGoal(goal);
-
   //start map service and create look up tables
   initializeCallback();
 
@@ -1539,12 +1512,10 @@ bool sensor_placement_node::startGSWithOffsetCallback()
 
   ROS_INFO("Clean up everything");
 
- // res.success = true; -b-
   //clean up
   polygon_offset_val_received_ = false;
   GS_pool_.clear();
   point_info_vec_.clear();
-
 
   target_num_ = 0;
 
@@ -1697,7 +1668,7 @@ void sensor_placement_node::forbiddenAreaCB(const geometry_msgs::PolygonStamped:
 {
   forbidden_area_vec_.push_back(*forbidden_area);
   fa_received_ = true;
-  //NOTE: get visualization function called again when a polygon is received -b-
+  //NOTE: get visualization function called again when a polygon is received
   fa_marker_array_pub_.publish(getPolygonVecVisualizationMarker(forbidden_area_vec_, "forbidden_area"));
 }
 
@@ -1749,16 +1720,6 @@ int main(int argc, char **argv)
 {
   // initialize ros and specify node name
   ros::init(argc, argv, "sensor_placement_node");
-
-  // create the action client
-  // action client takes two arguments: the server name to connect to and a boolean option to automatically spin a thread
-  //actionlib::SimpleActionClient<seneka_sensor_placement::sensorPlacementAction> ac("test", true);
-
- // ROS_INFO("Waiting for action server to start.");
- // // wait for the action server to start
-  //ac.waitForServer(); //will wait for infinite time
-
-  //ROS_INFO("Action server started, ready to send goals");
 
   // create Node Class
   sensor_placement_node my_placement_node;

@@ -1,6 +1,6 @@
 /****************************************************************
  *
- * Copyright (c) 2013
+ * Copyright (c) 2014
  *
  * Fraunhofer Institute for Manufacturing Engineering
  * and Automation (IPA)
@@ -51,11 +51,11 @@
 #include <sensor_placement_interface.h>
 
 
-//##############################################
-//########### This is action client ############
-//## here, services are responded and goals   ##
-//## are sent to the action server            ##
-//##############################################
+//############################################
+//######### This is action client ############
+//## here, services are responded and goals ##
+//## are sent to the action server          ##
+//############################################
 
 
 sensor_placement_interface::sensor_placement_interface()
@@ -115,12 +115,11 @@ bool sensor_placement_interface::startGSCallback(std_srvs::Empty::Request& req, 
 // callback function for the start GS service with offset parameter
 bool sensor_placement_interface::startGSWithOffsetCallback(seneka_sensor_placement::polygon_offset::Request& req, seneka_sensor_placement::polygon_offset::Response& res)
 {
-  ROS_INFO("'GreedySearch with OFFSET Parameter' service call received");
+  ROS_INFO("'GreedySearch_with_offset_polygon' service call received");
   // send goal
   seneka_sensor_placement::sensorPlacementGoal goal;
   goal.service_id = 4;
   goal.service_input_arg = req.offset_value;
-  //res.success = true;
   ac_.sendGoal(goal);
   res.success=true;
   return true;
@@ -129,7 +128,7 @@ bool sensor_placement_interface::startGSWithOffsetCallback(seneka_sensor_placeme
 // callback function for clearing all forbidden areas
 bool sensor_placement_interface::clearFACallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  ROS_INFO("'Clear Forbidden Areas' service call received");
+  ROS_INFO("'Clear_forbidden_areas' service call received");
   // send goal
   seneka_sensor_placement::sensorPlacementGoal goal;
   goal.service_id = 5;
@@ -149,12 +148,10 @@ bool sensor_placement_interface::testServiceCallback(std_srvs::Empty::Request& r
 
 bool sensor_placement_interface::cancelGoalCallBack(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  ROS_INFO("CancelAction request received");
+  ROS_INFO("Cancel action request received");
   ac_.cancelGoal();
   return true;
 }
-
-
 
 
 int main (int argc, char **argv)
@@ -162,25 +159,8 @@ int main (int argc, char **argv)
   ros::init(argc, argv, "sensor_placement_interface");
 
   sensor_placement_interface my_interface;
-/*
-  // send a goal to the action
-  seneka_sensor_placement::sensorPlacementGoal goal;
-  goal.service_id = 1;
-  ac_.sendGoal(goal);
 
-  //wait for the action to return
-  bool finished_before_timeout = ac_.waitForResult(ros::Duration(30.0));
-
-  if (finished_before_timeout)
-  {
-    actionlib::SimpleClientGoalState state = ac_.getState();
-    ROS_INFO("Action finished: %s",state.toString().c_str());
-  }
-  else
-    ROS_INFO("Action did not finish before the time out.");
-  //exit
-*/
-  ros::spin(); // -b- needed?
+  ros::spin();
   return 0;
 }
 

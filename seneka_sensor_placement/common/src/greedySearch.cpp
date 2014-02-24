@@ -100,41 +100,9 @@ greedySearch::~greedySearch(){}
 // function to set action server
 void greedySearch::setActionServer(actionlib::SimpleActionServer<seneka_sensor_placement::sensorPlacementAction> * action_server)
 {
-  //copy action server
+  //point to the given action server
   as_ = action_server;
-
-
-/*
-  if (as_->isPreemptRequested())
-  {
-    ROS_INFO("preempt requested - test action server pointer successful");
-  }
-  else
-  {
-    ROS_INFO("preempt not requested - test action server pointer successful");
-  }
-*/
 }
-
-/*
-//this function cancels the goal if requested by action client and returns true
-bool greedySearch::preemptRequested()
-{
-  // check that preempt has not been requested by the client    -b- !important step for preemption
-  if (as_->isPreemptRequested())
-  {
-    // set the action state to preempted, if it is not already preempted
-    if (as_->isActive())
-    {
-      ROS_INFO("Action preempted while executing Greedy Search");
-      as_->setPreempted();
-    }
-    return true;
-  }
-  return false;
-}
-*/
-
 
 // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
 bool greedySearch::newGreedyPlacement(size_t sensor_index)

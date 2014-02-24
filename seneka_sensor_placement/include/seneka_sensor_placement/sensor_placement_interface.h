@@ -1,6 +1,6 @@
 /****************************************************************
  *
- * Copyright (c) 2013
+ * Copyright (c) 2014
  *
  * Fraunhofer Institute for Manufacturing Engineering
  * and Automation (IPA)
@@ -52,10 +52,11 @@
 #ifndef SENSOR_PLACEMENT_INTERFACE_H
 #define SENSOR_PLACEMENT_INTERFACE_H
 
-
+// ros includes
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
 
+// external includes
 #include <seneka_sensor_placement/polygon_offset.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
