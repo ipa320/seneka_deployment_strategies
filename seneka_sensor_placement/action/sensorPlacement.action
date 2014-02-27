@@ -1,0 +1,9 @@
+#goal definition
+uint32 service_id
+uint32 service_input_arg
+---
+#result definition
+float32 coverage
+---
+#feedback
+float32 current_coverage

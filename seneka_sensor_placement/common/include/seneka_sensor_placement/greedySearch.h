@@ -65,10 +65,12 @@
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <actionlib/server/simple_action_server.h>
 
 // external includes
 #include <sensor_model.h>
 #include <seneka_utilities.h>
+#include <seneka_sensor_placement/sensorPlacementAction.h>
 
 
 using namespace seneka_utilities;
@@ -118,6 +120,9 @@ private:
   // actual map
   const nav_msgs::OccupancyGrid * pMap_;
 
+protected:
+  // create a pointer to point to the sensor placement action server
+  actionlib::SimpleActionServer<seneka_sensor_placement::sensorPlacementAction> * as_;
 
 public:
 
@@ -133,7 +138,7 @@ public:
   // ************************ update functions ************************;
 
   // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
-  void newGreedyPlacement(size_t sensor_index);
+  bool newGreedyPlacement(size_t sensor_index);
 
   // function to update the GS_point_info with raytracing
   void updateGSpointsRaytracing(size_t sensor_index, int point_id, bool update_covered_info);
@@ -143,6 +148,7 @@ public:
 
   // function to calculate coverage achieved
   double calGScoverage();
+
 
   // ************************ getter functions ************************
 
@@ -201,6 +207,9 @@ public:
 
   // function to create and set a lookup table for raytracing for each sensor
   void setLookupTable(const std::vector< std::vector<geometry_msgs::Point32> > * pLookup_table);
+
+  // function to set action server
+  void setActionServer(actionlib::SimpleActionServer<seneka_sensor_placement::sensorPlacementAction> * action_server);
 
   // ************************* help functions *************************
 

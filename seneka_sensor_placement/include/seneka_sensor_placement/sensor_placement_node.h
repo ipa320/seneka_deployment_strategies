@@ -73,7 +73,7 @@
 #include <std_msgs/String.h>
 #include <std_srvs/Empty.h>
 #include <nav_msgs/GetMap.h>
-
+#include <actionlib/server/simple_action_server.h>
 
 // external includes
 #include <sensor_model.h>
@@ -82,6 +82,7 @@
 #include <greedySearch.h>
 #include <clipper.hpp>
 #include <seneka_sensor_placement/polygon_offset.h>
+#include <seneka_sensor_placement/sensorPlacementAction.h>
 
 using namespace std;
 using namespace seneka_utilities;
@@ -187,7 +188,7 @@ private:
   // offset value for offsetAoI function
   double clipper_offset_value_;
 
-  // GS_target_offset_[in meters] parameters for Greedy Search
+  // GS_target_offset_ parameter [in meters] for Greedy Search
   double GS_target_offset_;
 
   // PSO parameter constants
@@ -197,6 +198,10 @@ private:
 
   // optimization result as nav_msgs::Path
   nav_msgs::Path PSO_result_;
+
+  //variable to check if the action was completed successfully or not
+  bool action_success_;
+
 
 public:
 
@@ -224,14 +229,6 @@ public:
   ros::Publisher nav_path_pub_;
   ros::Publisher offset_AoI_pub_;
   ros::Publisher fa_marker_array_pub_;
-
-  // declaration of ros service servers
-  ros::ServiceServer ss_start_PSO_;
-  ros::ServiceServer ss_start_GreedyPSO_;
-  ros::ServiceServer ss_start_GS_;
-  ros::ServiceServer ss_start_GS_with_offset_;
-  ros::ServiceServer ss_clear_fa_vec_;
-  ros::ServiceServer ss_test_;
 
   // declaration of ros service clients
   ros::ServiceClient sc_get_map_;
@@ -284,28 +281,49 @@ public:
   /* --------- ROS Callbacks ----------- */
   /* ----------------------------------- */
 
+  // callback function for the start PSO action
+  bool startPSOCallback();
 
-  // callback function for the start PSO service
-  bool startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+  // callback function for the start GreedyPSO action
+  bool startGreedyPSOCallback();
 
-  // callback function for the start GreedyPSO service
-  bool startGreedyPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+  // callback function for the start GS action
+  bool startGSCallback();
 
-  // callback function for the start GS service
-  bool startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
-
-  // callback function for the start GS service with offset parameter
-  bool startGSWithOffsetCallback(seneka_sensor_placement::polygon_offset::Request& req, seneka_sensor_placement::polygon_offset::Response& res);
+  // callback function for the start GS action with offset parameter
+  bool startGSWithOffsetCallback();
 
   // callback function for clearing all forbidden areas
-  bool clearFACallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+  bool clearFACallback();
 
-  // callback function for the test service
-  bool testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+  // callback function for the test action
+  bool testServiceCallback();
 
   // callback functions
   void AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI);
   void forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_areas);
+
+  // goal callback function
+  void executeGoalCB(const seneka_sensor_placement::sensorPlacementGoalConstPtr &goal);
+
+  // function that gets executed immediately when the action is preempted
+  void preemptCB();
+
+  // function to cancel the goal if requested by action client (sensor_placement_interface) and returns true
+  bool preemptRequested();
+
+
+protected:
+
+  // NodeHandle instance must be created before this line. Otherwise strange error may occur.
+  actionlib::SimpleActionServer<seneka_sensor_placement::sensorPlacementAction> as_;
+
+  // string to contain the action name
+  std::string action_name_;
+
+  // messages that are used to published feedback/result. NOTE: (not used yet)
+  seneka_sensor_placement::sensorPlacementFeedback action_feedback_;
+  seneka_sensor_placement::sensorPlacementResult action_result_;
 
 };
 

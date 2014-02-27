@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- start sensor_placement_itf -->
+  <node name="sensor_placement_interface" pkg="seneka_sensor_placement" type="sensor_placement_interface" output="screen" >
+
+  </node>
+	
+</launch>
