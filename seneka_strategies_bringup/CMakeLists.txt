@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(seneka_strategies_bringup)
 
+# set build type
+set(CMAKE_BUILD_TYPE Release)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -18,5 +21,6 @@ catkin_package(
    launch/rviz.launch
    launch/sensor_placement.launch 
    components/sensor_placement.xml
+   components/sensor_placement_itf.xml
    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
  )
