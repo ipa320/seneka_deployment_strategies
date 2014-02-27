@@ -10,5 +10,8 @@
 
 	<!--- start sensor_placement_node  -->
 	<include file="$(find seneka_strategies_bringup)/components/sensor_placement.xml" />
+  
+  <!--- start sensor_placement_itf  -->
+	<include file="$(find seneka_strategies_bringup)/components/sensor_placement_itf.xml" />
 
 </launch>

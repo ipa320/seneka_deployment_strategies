@@ -90,10 +90,10 @@ add_executable(sensor_placement_node 	src/sensor_placement_node.cpp
 					third_party/clipper_library/src/clipper.cpp
 					)
 add_executable(sensor_placement_test	test/sensor_placement_test_publisher.cpp)
-
 add_executable(sensor_placement_interface src/sensor_placement_interface.cpp)
 
-add_dependencies(sensor_placement_node  seneka_sensor_placement_gencpp)
+add_dependencies(sensor_placement_node  ${PROJECT_NAME}_gencpp)
+add_dependencies(sensor_placement_interface  ${PROJECT_NAME}_gencpp)
 
 ## Specify libraries to link a library or executable target against
  target_link_libraries(sensor_placement_node
