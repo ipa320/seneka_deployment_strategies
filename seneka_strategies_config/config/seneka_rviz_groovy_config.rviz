@@ -11,6 +11,8 @@ Panels:
         - /GS_Targets1
         - /GS_Targets1/Namespaces1
         - /ForbiddenAreas1
+        - /Points_of_interest1
+        - /Points_of_interest1/Namespaces1
       Splitter Ratio: 0.585185
     Tree Height: 898
   - Class: rviz/Time
@@ -89,6 +91,14 @@ Visualization Manager:
         {}
       Queue Size: 100
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /out_PoI_marker_array
+      Name: Points_of_interest
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -115,8 +125,8 @@ Visualization Manager:
       Scale: 5.72144
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 145.441
-      Y: 138.383
+      X: 149.286
+      Y: 138.209
     Saved: ~
 Window Geometry:
   Displays:

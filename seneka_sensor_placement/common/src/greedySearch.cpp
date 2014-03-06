@@ -811,9 +811,9 @@ visualization_msgs::MarkerArray greedySearch::getGridVisualizationMarker()
   visualization_msgs::Marker t_points;
   geometry_msgs::Point p;
   size_t GS_poolsize = GS_pool_.size();
-  unsigned int num_of_grids = 7;
+  unsigned int visualization_size_set = 7;
 
-  for (unsigned int i=0; i<num_of_grids; i++)
+  for (unsigned int i=0; i<visualization_size_set; i++)
   {
     // setup standard stuff
     t_points.header.frame_id = "/map";
@@ -830,7 +830,7 @@ visualization_msgs::MarkerArray greedySearch::getGridVisualizationMarker()
     t_points.color.g = 0.0;
     t_points.color.b = 1.0;
 
-    for (size_t point_id=0; point_id<GS_poolsize; point_id=point_id++)
+    for (size_t point_id=0; point_id<GS_poolsize; point_id++)
     {
 
       p.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);

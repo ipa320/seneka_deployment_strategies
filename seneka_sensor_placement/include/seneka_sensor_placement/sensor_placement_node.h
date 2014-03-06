@@ -116,6 +116,9 @@ private:
   // polygon array for forbidden area
   std::vector<geometry_msgs::PolygonStamped> forbidden_area_vec_;
 
+  // a vector for points of interest
+  std::vector<geometry_msgs::Point> PoI_vec_;
+
   // number of sensors
   int sensor_num_;
 
@@ -220,6 +223,7 @@ public:
 
   // declaration of ros subscribers
   ros::Subscriber AoI_sub_;
+  ros::Subscriber PoI_sub_;
   ros::Subscriber forbidden_area_sub_;
 
   // declaration of ros publishers
@@ -229,6 +233,7 @@ public:
   ros::Publisher nav_path_pub_;
   ros::Publisher offset_AoI_pub_;
   ros::Publisher fa_marker_array_pub_;
+//  ros::Publisher points_marker_array_pub_;
 
   // declaration of ros service clients
   ros::ServiceClient sc_get_map_;
@@ -274,7 +279,10 @@ public:
   geometry_msgs::PolygonStamped offsetAoI(double offset);
 
   // function to return the visualization markers of a vector of polygons
-  visualization_msgs::MarkerArray getPolygonVecVisualizationMarker(std::vector<geometry_msgs::PolygonStamped>, std::string );
+  visualization_msgs::MarkerArray getPolygonVecVisualizationMarker(std::vector<geometry_msgs::PolygonStamped>, std::string);
+
+  // function to return the visualization markers of a vector of points
+ // visualization_msgs::MarkerArray getPointVecVisualizationMarker(std::vector<geometry_msgs::Point>, std::string);
 
 
   /* ----------------------------------- */
@@ -301,6 +309,7 @@ public:
 
   // callback functions
   void AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI);
+  void PoICB(const visualization_msgs::MarkerArray::ConstPtr &PoI);
   void forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_areas);
 
   // goal callback function

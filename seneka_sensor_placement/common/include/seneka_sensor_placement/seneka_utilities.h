@@ -83,6 +83,8 @@ namespace seneka_utilities
     int8_t potential_target;
     // holds if the target lies within the forbidden area --
     bool forbidden;
+    // holds the priority of the target
+    int priority;
   };
 
   //information about the target which change and need to be reset

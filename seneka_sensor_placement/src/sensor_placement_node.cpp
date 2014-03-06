@@ -68,6 +68,8 @@ sensor_placement_node::sensor_placement_node()
   // ros subscribers
   AoI_sub_ = nh_.subscribe("in_AoI_poly", 1,
                            &sensor_placement_node::AoICB, this);
+  PoI_sub_ = nh_.subscribe("out_PoI_marker_array", 1,                           //rename to in_PoI_MA
+                           &sensor_placement_node::PoICB, this);
   forbidden_area_sub_ = nh_.subscribe("in_forbidden_area", 1,
                                       &sensor_placement_node::forbiddenAreaCB, this);
 
@@ -117,7 +119,27 @@ sensor_placement_node::sensor_placement_node()
   targets_saved_ = false;
   fa_received_ = false;
   polygon_offset_val_received_=false;
+/*
+  // test
+  geometry_msgs::Point p;
+  p.x = 100;
+  p.y = 150;
+  PoI_vec_.push_back(p);
+  p.x = 110;
+  p.y = 150;
+  PoI_vec_.push_back(p);
+  p.x = 200;
+  p.y = 170;
+  PoI_vec_.push_back(p);
+  p.x = 160;
+  p.y = 160;
+  PoI_vec_.push_back(p);
+  p.x = 200;
+  p.y = 180;
+  PoI_vec_.push_back(p);
 
+  points_marker_array_pub_.publish(getPointVecVisualizationMarker(PoI_vec_, "PoI_set"));
+*/
 }
 
 // destructor
@@ -438,6 +460,17 @@ bool sensor_placement_node::getTargets()
           dummy_target_info_fix.occupied = true;
           dummy_target_info_fix.potential_target = -1;
           dummy_target_info_fix.map_data = map_.data.at( j * map_.info.width + i);
+
+          // check if this target is a point of interest
+          for (size_t ii=0; ii<PoI_vec_.size(); ii++)
+          {
+            if((world_Coord.x == PoI_vec_.at(ii).x) && (world_Coord.y == PoI_vec_.at(ii).y))
+            {
+              // found a point of interest, set priority
+              dummy_target_info_fix.priority = 100;
+              break;
+            }
+          }
 
           //variable information
           dummy_target_info_var.covered = false;
@@ -1663,6 +1696,13 @@ void sensor_placement_node::AoICB(const geometry_msgs::PolygonStamped::ConstPtr 
   AoI_received_ = true;
 }
 
+// callback function saving the PoI received
+void sensor_placement_node::PoICB(const visualization_msgs::MarkerArray::ConstPtr &PoI)
+{
+  // save points of interest
+  PoI_vec_ = (*PoI).markers.at(0).points;
+}
+
 // callback function saving the forbidden area received
 void sensor_placement_node::forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_area)
 {
@@ -1712,7 +1752,47 @@ visualization_msgs::MarkerArray sensor_placement_node::getPolygonVecVisualizatio
   }
   return polygon_marker_array;
 }
+/*
+// function to return the visualization markers of a vector of points
+visualization_msgs::MarkerArray sensor_placement_node::getPointVecVisualizationMarker(std::vector<geometry_msgs::Point> points_vec, std::string points_vec_name)
+{
+  visualization_msgs::MarkerArray points_ma;
+  visualization_msgs::Marker points_marker;
+  geometry_msgs::Point p;
+  unsigned int visualization_size_set = 7;
 
+  for (unsigned int i=0; i<visualization_size_set; i++)
+  {
+    // setup standard stuff
+    points_marker.header.frame_id = "/map";
+    points_marker.header.stamp = ros::Time();
+    points_marker.ns = points_vec_name + boost::lexical_cast<std::string>(i);;
+    points_marker.action = visualization_msgs::Marker::ADD;
+    points_marker.pose.orientation.w = 1.0;
+    points_marker.id = 0;
+    points_marker.type = visualization_msgs::Marker::POINTS;
+    points_marker.scale.x = 0.2+0.1*i;
+    points_marker.scale.y = 0.2+0.1*i;
+    points_marker.color.a = 1.0;
+    points_marker.color.r = 1.0;
+    points_marker.color.g = 0.0;
+    points_marker.color.b = 0.0;
+
+    for (size_t k=0; k<points_vec.size(); k++)
+    {
+
+      p.x = mapToWorldX(points_vec.at(k).x, map_);
+      p.y = mapToWorldY(points_vec.at(k).y, map_);
+
+      points_marker.points.push_back(p);
+
+    }
+    points_ma.markers.push_back(points_marker);
+  }
+  return points_ma;
+}
+
+*/
 
 //######################
 //#### main program ####

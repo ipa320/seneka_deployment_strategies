@@ -893,6 +893,9 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
               // now the given target is covered by at least one sensor
               targets_with_info_var_.at(cell_in_vector_coordinates).covered = true;
 
+              //check the priority of target
+              // priority_sum = priority_sum + targets_with_info.at(celL_in_vector_coordinates).priority;
+
               if (lock_targets==true)
               {
                 targets_with_info_var_.at(cell_in_vector_coordinates).no_reset=true;
