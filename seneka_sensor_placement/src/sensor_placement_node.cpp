@@ -107,6 +107,9 @@ sensor_placement_node::sensor_placement_node()
   // initialize number of targets
   target_num_ = 0;
 
+  // initialize best priority sum
+  best_priority_sum_ = 0;
+
   // initialize total number of targets covered by GreedyPSO
   total_gPSO_covered_targets_num_ = 0;
 
@@ -456,17 +459,18 @@ bool sensor_placement_node::getTargets()
           dummy_target_info_fix.world_pos.y = world_Coord.y;
           dummy_target_info_fix.world_pos.z = 0;
 
-          dummy_target_info_fix.forbidden = false;    //all targets are allowed unless found in forbidden area
+          dummy_target_info_fix.forbidden = false;                                         //all targets are allowed unless found in forbidden area
           dummy_target_info_fix.occupied = true;
           dummy_target_info_fix.potential_target = -1;
           dummy_target_info_fix.map_data = map_.data.at( j * map_.info.width + i);
+          dummy_target_info_fix.priority = 0;                                              //set default priority
 
           // check if this target is a point of interest
           for (size_t ii=0; ii<PoI_vec_.size(); ii++)
           {
             if((world_Coord.x == PoI_vec_.at(ii).x) && (world_Coord.y == PoI_vec_.at(ii).y))
             {
-              // found a point of interest, set priority
+              // found a point of interest, set new priority
               dummy_target_info_fix.priority = 100;
               break;
             }
@@ -1285,7 +1289,7 @@ void sensor_placement_node::runGS()
   }
 
 }
-
+/*
 void sensor_placement_node::getGlobalBest()
 {
   // a new global best solution is accepted if
@@ -1308,6 +1312,40 @@ void sensor_placement_node::getGlobalBest()
         global_best_ = particle_swarm_.at(i);
         global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
         best_particle_index_ = i;
+      }
+    }
+  }
+}
+*/
+
+void sensor_placement_node::getGlobalBest()
+{
+  // a new global best solution is accepted if
+  // (0) more points of interest are being covered, or if same number of points of interest are being covered, but:
+  // (1) the coverage is higher than the old best coverage or
+  // (2) the coverage is equal to the old best coverage but there are less targets covered by multiple sensors
+  for(size_t i=0; i < particle_swarm_.size(); i++)
+  {
+    if (particle_swarm_.at(i).getPrioritySum() >= best_priority_sum_)
+    {
+      //update the best_priority_sum_
+      best_priority_sum_ = particle_swarm_.at(i).getPrioritySum();
+      if(particle_swarm_.at(i).getActualCoverage() > best_cov_)
+      {
+        best_cov_ = particle_swarm_.at(i).getActualCoverage();
+        global_best_ = particle_swarm_.at(i);
+        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+        best_particle_index_ = i;
+      }
+      else
+      {
+        if( (particle_swarm_.at(i).getActualCoverage() == best_cov_) && (particle_swarm_.at(i).getMultipleCoverageIndex() < global_best_multiple_coverage_ ))
+        {
+          best_cov_ = particle_swarm_.at(i).getActualCoverage();
+          global_best_ = particle_swarm_.at(i);
+          global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+          best_particle_index_ = i;
+        }
       }
     }
   }

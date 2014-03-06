@@ -105,6 +105,9 @@ private:
   int target_num_;
   int covered_targets_num_;
 
+  // priority sum -b-
+  int priority_sum_;
+
   // covered targets by GreedyPSO
   int gPSO_covered_targets_num_;
 
@@ -164,6 +167,9 @@ public:
 
   // function to get multiple coverage index
   int getMultipleCoverageIndex();
+
+  // function to get the priority sum of the particle
+  int getPrioritySum();
 
   // function to get targets_info_var
   std::vector<target_info_var> getTargetsWithInfoVar();

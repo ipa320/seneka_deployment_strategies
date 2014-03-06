@@ -187,6 +187,12 @@ int particle::getMultipleCoverageIndex()
   return multiple_coverage_;
 }
 
+// function to get the priority sum of the particle
+int particle::getPrioritySum()
+{
+  return priority_sum_;
+}
+
 // function to get targets_info_var
 std::vector<target_info_var> particle::getTargetsWithInfoVar()
 {
@@ -893,8 +899,10 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
               // now the given target is covered by at least one sensor
               targets_with_info_var_.at(cell_in_vector_coordinates).covered = true;
 
-              //check the priority of target
-              // priority_sum = priority_sum + targets_with_info.at(celL_in_vector_coordinates).priority;
+              //calculate the priority of target
+              //**NOTE!!: rays covering a cell multiple times will cause the target to falsely increase in priority
+              //only points of interest will contribute to the priority sum, as priority for all other points is zero
+              priority_sum_ = priority_sum_ + pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority;
 
               if (lock_targets==true)
               {

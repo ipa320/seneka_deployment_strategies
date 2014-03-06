@@ -167,6 +167,9 @@ private:
   // vector storing the positions global best solution of the particle swarm
   particle global_best_;
 
+  // best_priority_sum_ -b-
+  int best_priority_sum_;
+
   // PSO actual best coverage
   double best_cov_;
   int global_best_multiple_coverage_;
