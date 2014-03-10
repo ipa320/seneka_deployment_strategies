@@ -1121,6 +1121,7 @@ void sensor_placement_node::PSOptimize()
       {
         //t_start = clock();
         particle_swarm_.at(i).resetTargetsWithInfoVar();
+        particle_swarm_.at(i).resetPrioritySum();
         //t_end = clock();
         //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
         //ROS_INFO( "reset: %10.10f \n", t_diff);
@@ -1330,6 +1331,7 @@ void sensor_placement_node::getGlobalBest()
     {
       //update the best_priority_sum_
       best_priority_sum_ = particle_swarm_.at(i).getPrioritySum();
+      ROS_INFO_STREAM("best priority updated " << best_priority_sum_);
       if(particle_swarm_.at(i).getActualCoverage() > best_cov_)
       {
         best_cov_ = particle_swarm_.at(i).getActualCoverage();

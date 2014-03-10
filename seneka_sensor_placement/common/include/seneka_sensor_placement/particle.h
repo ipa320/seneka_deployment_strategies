@@ -195,6 +195,9 @@ public:
   // function to reset the variable information for all targets
   void resetTargetsWithInfoVar();
 
+  // function to reset priority sum of the particle
+  int resetPrioritySum();
+
   // function that sets the map
   void setMap(const nav_msgs::OccupancyGrid & new_map);
 

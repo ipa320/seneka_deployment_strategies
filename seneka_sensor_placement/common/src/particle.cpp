@@ -193,6 +193,12 @@ int particle::getPrioritySum()
   return priority_sum_;
 }
 
+// function to reset priority sum of the particle
+int particle::resetPrioritySum()
+{
+  priority_sum_=0;
+}
+
 // function to get targets_info_var
 std::vector<target_info_var> particle::getTargetsWithInfoVar()
 {
