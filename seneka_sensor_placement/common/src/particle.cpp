@@ -69,9 +69,12 @@ particle::particle()
   // initialize personal best coverage
   pers_best_coverage_ = 0;
 
-  //initialize multiple coverage indices
+  // initialize multiple coverage indices
   multiple_coverage_ = 0;
   pers_best_multiple_coverage_ = 0;
+
+  // initialize priority sum
+  priority_sum_ = 0;
 
   // initialize coverage matrix
 
@@ -100,6 +103,9 @@ particle::particle(int num_of_sensors, int num_of_targets, FOV_2D_model sensor_m
   // initialize multiple coverage indices
   multiple_coverage_ = 0;
   pers_best_multiple_coverage_ = 0;
+
+  // initialize priority sum
+  priority_sum_ = 0;
 
 // initialize sensor vector with as many entries as specified by sensors_num_
   sensors_.assign(sensor_num_, sensor_model);
@@ -241,25 +247,33 @@ void particle::setTargetsWithInfoFix(const std::vector<target_info_fix> & target
 }
 
 // function to set the variable information for all targets
-void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var)
+void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var, int priority_sum)
+//void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var)
 {
+  priority_sum_ = priority_sum;
+  ROS_INFO_STREAM("setted priority sum to be " << priority_sum);
   targets_with_info_var_ = targets_with_info_var;
   covered_targets_num_ = 0;
   multiple_coverage_ = 0;
 }
 
 // function to reset the variable information for all targets
-void particle::resetTargetsWithInfoVar()
+void particle::resetTargetsWithInfoVar(bool reset_priority_sum)
 {
   #pragma omp parallel for  //NOTE: parallelized only when called from a non-parallel block. TODO: use omp_set_nested(n), also take into account that nested parallel regions will itself add an overhead
     for(int i=0; i<targets_with_info_var_.size(); i++)
     {
       if (targets_with_info_var_.at(i).no_reset==false)
         targets_with_info_var_.at(i).reset();
+        //for GreedyPSO, here count the number of targets which are locked AND have high priority and reset to covered_PoI_targets*100 instead of zero
     }
+
+  if (reset_priority_sum == true)
+    priority_sum_ = 0;
 
   covered_targets_num_ = 0;
   multiple_coverage_ = 0;
+
 }
 
 // function that set the map

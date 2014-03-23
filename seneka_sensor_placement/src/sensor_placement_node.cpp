@@ -1116,12 +1116,12 @@ void sensor_placement_node::PSOptimize()
   {
     global_pose = global_best_.getSolutionPositions();
     // update each particle in vector
-    #pragma omp parallel for
+   #pragma omp parallel for
       for(size_t i=0; i < particle_swarm_.size(); i++)
       {
         //t_start = clock();
-        particle_swarm_.at(i).resetTargetsWithInfoVar();
-        particle_swarm_.at(i).resetPrioritySum();
+        particle_swarm_.at(i).resetTargetsWithInfoVar();    //priority sum is also resetted here
+// -b-c        particle_swarm_.at(i).resetPrioritySum();
         //t_end = clock();
         //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
         //ROS_INFO( "reset: %10.10f \n", t_diff);
@@ -1199,7 +1199,7 @@ void sensor_placement_node::GreedyPSOptimize()
     //iteration step
     //continue calculation as long as there are iteration steps left and actual best coverage (per sensor) is
     //lower than mininmal sensor coverage
-    // and goal cancellation is not requested by action client
+    //and goal cancellation is not requested by action client
     while(iter < iter_max_per_sensor_ && best_cov_ < min_sensor_cov_ && !preemptRequested())
     {
       global_pose = global_best_.getSolutionPositions();
@@ -1209,6 +1209,7 @@ void sensor_placement_node::GreedyPSOptimize()
         {
           //t_start = clock();
           particle_swarm_.at(i).resetTargetsWithInfoVar();                  //locked targets are not resetted
+ //  -b-       particle_swarm_.at(i).resetPrioritySum();
           //t_end = clock();
           //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
           //ROS_INFO( "reset: %10.10f \n", t_diff);
@@ -1239,7 +1240,7 @@ void sensor_placement_node::GreedyPSOptimize()
     marker_array_pub_.publish(sol_particle_.getSolutionlVisualizationMarkers());
     //save the coverage by global best particle, first reset targets
     global_best_.resetTargetsWithInfoVar();
-    //now lock targets that the global best is covering
+    //now lock targets that the global best is covering and count the priority sum for locked targets
     global_best_.updateTargetsInfoRaytracing(0, true);
     //calculate and print total coverage by GreedyPSO
     total_gPSO_covered_targets_num_ = total_gPSO_covered_targets_num_+ global_best_.getNumOfTargetsCovered();
@@ -1247,7 +1248,7 @@ void sensor_placement_node::GreedyPSOptimize()
     //set updated targets for whole particle swarm. TODO: use a pointer for targetsWithInfo instead of each particle having their own targetsWithInfo object
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
-      particle_swarm_.at(i).setTargetsWithInfoVar(global_best_.getTargetsWithInfoVar());
+      particle_swarm_.at(i).setTargetsWithInfoVar(global_best_.getTargetsWithInfoVar(), global_best_.getPrioritySum());  //-b-
     }
   }
 }
@@ -1318,7 +1319,7 @@ void sensor_placement_node::getGlobalBest()
   }
 }
 */
-
+/*
 void sensor_placement_node::getGlobalBest()
 {
   // a new global best solution is accepted if
@@ -1332,6 +1333,50 @@ void sensor_placement_node::getGlobalBest()
       //update the best_priority_sum_
       best_priority_sum_ = particle_swarm_.at(i).getPrioritySum();
       ROS_INFO_STREAM("best priority updated " << best_priority_sum_);
+      if(particle_swarm_.at(i).getActualCoverage() > best_cov_)
+      {
+        best_cov_ = particle_swarm_.at(i).getActualCoverage();
+        global_best_ = particle_swarm_.at(i);
+        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+        best_particle_index_ = i;
+      }
+      else
+      {
+        if( (particle_swarm_.at(i).getActualCoverage() == best_cov_) && (particle_swarm_.at(i).getMultipleCoverageIndex() < global_best_multiple_coverage_ ))
+        {
+          best_cov_ = particle_swarm_.at(i).getActualCoverage();
+          global_best_ = particle_swarm_.at(i);
+          global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+          best_particle_index_ = i;
+        }
+      }
+    }
+  }
+}
+*/
+void sensor_placement_node::getGlobalBest()
+{
+  // a new global best solution is accepted if
+  // (0) more points of interest are being covered, or if same number of points of interest are being covered, but:
+  // (1) the coverage is higher than the old best coverage or
+  // (2) the coverage is equal to the old best coverage but there are less targets covered by multiple sensors
+  for(size_t i=0; i < particle_swarm_.size(); i++)
+  {
+    if (particle_swarm_.at(i).getPrioritySum() > best_priority_sum_)
+    {
+      //update the best_priority_sum_
+      best_priority_sum_ = particle_swarm_.at(i).getPrioritySum();
+      ROS_INFO_STREAM("best priority updated " << best_priority_sum_);
+
+      //update the best solution
+      best_cov_ = particle_swarm_.at(i).getActualCoverage();
+      global_best_ = particle_swarm_.at(i);
+      global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+      best_particle_index_ = i;
+    }
+
+    if (particle_swarm_.at(i).getPrioritySum() == best_priority_sum_)
+    {
       if(particle_swarm_.at(i).getActualCoverage() > best_cov_)
       {
         best_cov_ = particle_swarm_.at(i).getActualCoverage();

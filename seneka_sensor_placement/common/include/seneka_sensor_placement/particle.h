@@ -190,10 +190,11 @@ public:
   void setTargetsWithInfoFix(const std::vector<target_info_fix> &targets_with_info_fix, int target_num);
 
   // function to set the variable information for all targets
-  void setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var);
+  void setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var, int priority_sum = 0);
+//  void setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var);
 
-  // function to reset the variable information for all targets
-  void resetTargetsWithInfoVar();
+  // function to reset the variable information for all targets and also reset priority_sum_ if requested
+  void resetTargetsWithInfoVar(bool reset_priority_sum = true);
 
   // function to reset priority sum of the particle
   int resetPrioritySum();
