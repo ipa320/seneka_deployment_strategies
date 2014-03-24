@@ -331,6 +331,7 @@ int greedySearch::getCoverageRaytracing(size_t sensor_index)
             if(pPoint_info_vec_->at(cell_in_vector_coordinates).covered == false)
             {
               coverage_by_new_orientation++;
+              coverage_by_new_orientation = coverage_by_new_orientation + pPoint_info_vec_->at(cell_in_vector_coordinates).priority;    //-b- test
             }
           }
           //cell not a potential target or occupied -> skip rest of this ray
@@ -499,6 +500,8 @@ void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id, b
             if(pPoint_info_vec_->at(cell_in_vector_coordinates).covered == false)
             {
               coverage_by_new_orientation++;
+              coverage_by_new_orientation = coverage_by_new_orientation + pPoint_info_vec_->at(cell_in_vector_coordinates).priority;    //-b- test
+
               //mark this position as covered only if the current pose is the final selected position for sensor placement
               if(update_covered_info == true)
               {

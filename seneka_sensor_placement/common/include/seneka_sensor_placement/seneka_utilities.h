@@ -132,7 +132,8 @@ namespace seneka_utilities
     bool occupied;
     // holds if the target is covered
     bool covered;
-
+    // holds the priority of the target
+    int priority;
   };
 
 

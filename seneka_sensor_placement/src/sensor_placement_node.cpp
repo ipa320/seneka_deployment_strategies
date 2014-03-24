@@ -410,9 +410,21 @@ bool sensor_placement_node::getTargets()
           dummy_target_info_fix.world_pos.y = mapToWorldY(j, map_);
           dummy_target_info_fix.world_pos.z = 0;
 
-          dummy_target_info_fix.forbidden = false;    //all targets are allowed unless found in forbidden area
+          dummy_target_info_fix.forbidden = false;                          //all targets are allowed unless found in forbidden area
           dummy_target_info_fix.occupied = true;
           dummy_target_info_fix.potential_target = -1;
+          dummy_target_info_fix.priority = 0;                                //all targets other than PoI have priority = 0
+
+          // check if current target is a point of interest
+          for (size_t ii=0; ii<PoI_vec_.size(); ii++)
+          {
+            if((world_Coord.x == PoI_vec_.at(ii).x) && (world_Coord.y == PoI_vec_.at(ii).y))
+            {
+              // found a point of interest, set priority
+              dummy_target_info_fix.priority = 100;
+              break;
+            }
+          }
 
           //variable information
           dummy_target_info_var.covered = false;
@@ -463,14 +475,14 @@ bool sensor_placement_node::getTargets()
           dummy_target_info_fix.occupied = true;
           dummy_target_info_fix.potential_target = -1;
           dummy_target_info_fix.map_data = map_.data.at( j * map_.info.width + i);
-          dummy_target_info_fix.priority = 0;                                              //set default priority
+          dummy_target_info_fix.priority = 0;                                              //all targets other than PoI have priority = 0
 
-          // check if this target is a point of interest
+          // check if current target is a point of interest
           for (size_t ii=0; ii<PoI_vec_.size(); ii++)
           {
             if((world_Coord.x == PoI_vec_.at(ii).x) && (world_Coord.y == PoI_vec_.at(ii).y))
             {
-              // found a point of interest, set new priority
+              // found a point of interest, set priority
               dummy_target_info_fix.priority = 100;
               break;
             }
@@ -578,6 +590,18 @@ bool sensor_placement_node::getGSTargets()
 
           dummy_point_info.occupied = true;
           dummy_point_info.potential_target = -1;
+          dummy_point_info.priority = 0;                              //all points other than PoI have priority = 0
+
+          // check if current point is a point of interest
+          for (size_t ii=0; ii<PoI_vec_.size(); ii++)
+          {
+            if((world_Coord.x == PoI_vec_.at(ii).x) && (world_Coord.y == PoI_vec_.at(ii).y))
+            {
+              // found a point of interest, set priority
+              dummy_point_info.priority = 100;
+              break;
+            }
+          }
 
           //check if the given point is occupied or not; mark non-occupied ones as potential targets
           if(map_.data.at( j * map_.info.width + i) == 0)
@@ -672,6 +696,18 @@ bool sensor_placement_node::getGSTargets()
 
             dummy_point_info.occupied = true;
             dummy_point_info.potential_target = -1;
+            dummy_point_info.priority = 0;                              //all points other than PoI have priority = 0
+
+            // check if current point is a point of interest
+            for (size_t ii=0; ii<PoI_vec_.size(); ii++)
+            {
+              if((world_Coord.x == PoI_vec_.at(ii).x) && (world_Coord.y == PoI_vec_.at(ii).y))
+              {
+                // found a point of interest, set priority
+                dummy_point_info.priority = 100;
+                break;
+              }
+            }
 
             // the given point lies withhin the polygon
             if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 2)
@@ -799,6 +835,18 @@ bool sensor_placement_node::getGSTargets()
 
             dummy_point_info.occupied = true;
             dummy_point_info.potential_target = -1;
+            dummy_point_info.priority = 0;                              //all points other than PoI have priority = 0
+
+            // check if current point is a point of interest
+            for (size_t ii=0; ii<PoI_vec_.size(); ii++)
+            {
+              if((world_Coord.x == PoI_vec_.at(ii).x) && (world_Coord.y == PoI_vec_.at(ii).y))
+              {
+                // found a point of interest, set priority
+                dummy_point_info.priority = 100;
+                break;
+              }
+            }
 
             // the given point lies withhin the polygon
             if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 2)
