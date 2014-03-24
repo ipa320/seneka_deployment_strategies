@@ -258,7 +258,7 @@ void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets
 }
 
 // function to reset the variable information for all targets
-void particle::resetTargetsWithInfoVar(bool reset_priority_sum)
+void particle::resetTargetsWithInfoVar()
 {
   #pragma omp parallel for  //NOTE: parallelized only when called from a non-parallel block. TODO: use omp_set_nested(n), also take into account that nested parallel regions will itself add an overhead
     for(int i=0; i<targets_with_info_var_.size(); i++)
@@ -267,12 +267,9 @@ void particle::resetTargetsWithInfoVar(bool reset_priority_sum)
         targets_with_info_var_.at(i).reset();
     }
 
-  if (reset_priority_sum == true)
-    priority_sum_ = 0;
-
+  priority_sum_ = 0;
   covered_targets_num_ = 0;
   multiple_coverage_ = 0;
-
 }
 
 // function that set the map

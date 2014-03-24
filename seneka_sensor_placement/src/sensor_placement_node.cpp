@@ -1167,8 +1167,9 @@ void sensor_placement_node::GreedyPSOptimize()
   for (unsigned int sensor_iter = 0; sensor_iter<sensor_num_; sensor_iter++)
   {
     //reinitialize
-    iter=0;
-    best_cov_=0;
+    iter = 0;
+    best_cov_ = 0;
+    best_priority_sum_ = 0;
 
     //place sensors randomly on perimeter for each particle with random velocities
     if(AoI_received_)
@@ -1209,7 +1210,6 @@ void sensor_placement_node::GreedyPSOptimize()
         {
           //t_start = clock();
           particle_swarm_.at(i).resetTargetsWithInfoVar();                  //locked targets are not resetted
- //  -b-       particle_swarm_.at(i).resetPrioritySum();
           //t_end = clock();
           //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
           //ROS_INFO( "reset: %10.10f \n", t_diff);
@@ -1245,10 +1245,11 @@ void sensor_placement_node::GreedyPSOptimize()
     //calculate and print total coverage by GreedyPSO
     total_gPSO_covered_targets_num_ = total_gPSO_covered_targets_num_+ global_best_.getNumOfTargetsCovered();
     ROS_INFO_STREAM("Total coverage by GreedyPSO: " << (double) total_gPSO_covered_targets_num_/target_num_);
-    //set updated targets for whole particle swarm. TODO: use a pointer for targetsWithInfo instead of each particle having their own targetsWithInfo object
+    //set updated targets for whole particle swarm i.e. make the state of targets_with_info_var
+    //TODO: use a pointer for targetsWithInfo instead of each particle having their own targetsWithInfo object
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
-      particle_swarm_.at(i).setTargetsWithInfoVar(global_best_.getTargetsWithInfoVar(), global_best_.getPrioritySum());  //-b-
+      particle_swarm_.at(i).setTargetsWithInfoVar(global_best_.getTargetsWithInfoVar());    // priority_sum_ for each particle gets resetted here
     }
   }
 }
@@ -1550,6 +1551,7 @@ bool sensor_placement_node::startGreedyPSOCallback()
   target_num_ = 0;
   best_cov_ = 0;
   best_particle_index_ = 0;
+  best_priority_sum_ = 0;
 
   ROS_INFO("GreedyPSO terminated successfully");
 
