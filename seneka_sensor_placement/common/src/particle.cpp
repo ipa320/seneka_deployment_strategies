@@ -265,7 +265,6 @@ void particle::resetTargetsWithInfoVar(bool reset_priority_sum)
     {
       if (targets_with_info_var_.at(i).no_reset==false)
         targets_with_info_var_.at(i).reset();
-        //for GreedyPSO, here count the number of targets which are locked AND have high priority and reset to covered_PoI_targets*100 instead of zero
     }
 
   if (reset_priority_sum == true)

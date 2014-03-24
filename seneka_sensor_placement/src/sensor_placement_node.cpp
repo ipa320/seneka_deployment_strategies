@@ -1493,6 +1493,7 @@ bool sensor_placement_node::startPSOCallback()
   target_num_ = 0;
   best_cov_ = 0;
   best_particle_index_ = 0;
+  best_priority_sum_ = 0;
 
   ROS_INFO("PSO terminated successfully");
 
