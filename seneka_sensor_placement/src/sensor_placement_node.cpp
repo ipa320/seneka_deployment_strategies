@@ -843,7 +843,8 @@ bool sensor_placement_node::getGSTargets()
               if((world_Coord.x == PoI_vec_.at(ii).x) && (world_Coord.y == PoI_vec_.at(ii).y))
               {
                 // found a point of interest, set priority
-                dummy_point_info.priority = 100;
+                ROS_INFO_STREAM("setting priority " );
+                dummy_point_info.priority = 1000000;
                 break;
               }
             }

@@ -223,6 +223,9 @@ bool greedySearch::newGreedyPlacement(size_t sensor_index)
       //if new sum is larger than max sum then update max pose info
       if (new_sum>max_sum)
       {
+          ROS_INFO_STREAM("new_sum " << new_sum);
+         // ROS_INFO_STREAM("max int " << std::numeric_limits<int>::max());
+
         max_sum = new_sum;
         new_pose.orientation = tf::createQuaternionMsgFromYaw((cov_vec_ind*gs_ang_r[0] + (num_of_slices*gs_ang_r[0])/2)-gs_ang_r[0]/2);
         setMaxSensorCovPOSE(new_pose);
@@ -332,6 +335,8 @@ int greedySearch::getCoverageRaytracing(size_t sensor_index)
             {
               coverage_by_new_orientation++;
               coverage_by_new_orientation = coverage_by_new_orientation + pPoint_info_vec_->at(cell_in_vector_coordinates).priority;    //-b- test
+            //  if (pPoint_info_vec_->at(cell_in_vector_coordinates).priority != 0)
+            //    ROS_INFO_STREAM(" in raytracing: priority "<< pPoint_info_vec_->at(cell_in_vector_coordinates).priority);
             }
           }
           //cell not a potential target or occupied -> skip rest of this ray
@@ -414,6 +419,7 @@ int greedySearch::getCoverageRaytracing(size_t sensor_index)
     }
   }
   //all rays checked
+
 
   return coverage_by_new_orientation;
 }
