@@ -94,7 +94,7 @@ public:
   ros::ServiceServer ss_AoI_;
   ros::ServiceServer ss_forbidden_area_;
   ros::ServiceServer ss_PoI_;
-  ros::ServiceServer ss_PoI_set_;
+  ros::ServiceServer ss_PoIs_;
 
   //parameter for number of forbidden areas
   int num_of_fa_;
@@ -143,10 +143,10 @@ public:
 
     // Service Initializations
     ss_AoI_ = nh_.advertiseService("publish_AoI", &NodeClass::srvCB_AoI, this);
-    ss_forbidden_area_ = nh_.advertiseService("publish_forbidden_area",
+    ss_forbidden_area_ = nh_.advertiseService("publish_forbidden_areas",
                                               &NodeClass::srvCB_forbidden_area, this);
     ss_PoI_ = nh_.advertiseService("publish_PoI", &NodeClass::srvCB_PoI, this);
-    ss_PoI_set_ = nh_.advertiseService("publish_PoI_set", &NodeClass::srvCB_PoI_set, this);
+    ss_PoIs_ = nh_.advertiseService("publish_PoIs", &NodeClass::srvCB_PoI_set, this);
   }
 
   // Destructor

@@ -166,8 +166,6 @@ bool greedySearch::newGreedyPlacement(size_t sensor_index)
 
   //change the sensor open angles for search
   setOpenAngles(gs_ang_r);
-  //while searching, restrict updating of 'covered' info in updateGSpointsRaytracing
-  update_covered_info=false;
   //reset previous max coverage information before searching for new position
   resetMaxSensorCovInfo();
   //reset max targets covered information
@@ -199,11 +197,9 @@ bool greedySearch::newGreedyPlacement(size_t sensor_index)
         // set the action state to preempted, if it is śtill active
         if (as_->isActive())
         {
-         // ROS_INFO("Action preempted while executing Greedy Search");
           as_->setPreempted();
         }
-        //prepare to return
-        //reset the sensor open angles
+        //prepare to return: reset the sensor open angles
         new_ang_r[0] = num_of_slices*gs_ang_r[0];
         setOpenAngles(new_ang_r);
         return false;
@@ -223,9 +219,6 @@ bool greedySearch::newGreedyPlacement(size_t sensor_index)
       //if new sum is larger than max sum then update max pose info
       if (new_sum>max_sum)
       {
-          ROS_INFO_STREAM("new_sum " << new_sum);
-         // ROS_INFO_STREAM("max int " << std::numeric_limits<int>::max());
-
         max_sum = new_sum;
         new_pose.orientation = tf::createQuaternionMsgFromYaw((cov_vec_ind*gs_ang_r[0] + (num_of_slices*gs_ang_r[0])/2)-gs_ang_r[0]/2);
         setMaxSensorCovPOSE(new_pose);
@@ -245,12 +238,10 @@ bool greedySearch::newGreedyPlacement(size_t sensor_index)
   placement_point_id = getMaxSensorCovPointID();
   //place the sensor at max coverage point
   sensors_.at(sensor_index).setSensorPose(placement_pose);
-  //now update the 'covered' info
-  update_covered_info = true;
-  updateGSpointsRaytracing(sensor_index, placement_point_id, update_covered_info);
+  //now update the 'covered' info of the points
+  updateGSpointsRaytracing(sensor_index, placement_point_id);
 
   return true;
-
 }
 
 
@@ -334,9 +325,7 @@ int greedySearch::getCoverageRaytracing(size_t sensor_index)
             if(pPoint_info_vec_->at(cell_in_vector_coordinates).covered == false)
             {
               coverage_by_new_orientation++;
-              coverage_by_new_orientation = coverage_by_new_orientation + pPoint_info_vec_->at(cell_in_vector_coordinates).priority;    //-b- test
-            //  if (pPoint_info_vec_->at(cell_in_vector_coordinates).priority != 0)
-            //    ROS_INFO_STREAM(" in raytracing: priority "<< pPoint_info_vec_->at(cell_in_vector_coordinates).priority);
+              coverage_by_new_orientation+=pPoint_info_vec_->at(cell_in_vector_coordinates).priority;
             }
           }
           //cell not a potential target or occupied -> skip rest of this ray
@@ -425,8 +414,10 @@ int greedySearch::getCoverageRaytracing(size_t sensor_index)
 }
 
 
-//function to update the GS_point_info with raytracing
-void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id, bool update_covered_info)
+
+
+//function to update the GS_point_info
+void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id)
 {
   //clear vector of ray end points
   sensors_.at(sensor_index).clearRayEndPoints();
@@ -506,14 +497,11 @@ void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id, b
             if(pPoint_info_vec_->at(cell_in_vector_coordinates).covered == false)
             {
               coverage_by_new_orientation++;
-              coverage_by_new_orientation = coverage_by_new_orientation + pPoint_info_vec_->at(cell_in_vector_coordinates).priority;    //-b- test
+              coverage_by_new_orientation+=pPoint_info_vec_->at(cell_in_vector_coordinates).priority;    //-b- test
+              //mark this cell as covered as the current position of sensor is the final placement position
+              pPoint_info_vec_->at(cell_in_vector_coordinates).covered = true;
+              covered_targets_num_++;
 
-              //mark this position as covered only if the current pose is the final selected position for sensor placement
-              if(update_covered_info == true)
-              {
-                pPoint_info_vec_->at(cell_in_vector_coordinates).covered = true;
-                covered_targets_num_++;
-              }
             }
           }
           //cell not a potential target or occupied -> skip rest of this ray

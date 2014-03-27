@@ -167,7 +167,7 @@ private:
   // vector storing the positions global best solution of the particle swarm
   particle global_best_;
 
-  // best_priority_sum_ -b-
+  // best_priority_sum_
   int best_priority_sum_;
 
   // PSO actual best coverage
@@ -281,11 +281,11 @@ public:
   // function to create an offsetted polygon from area of interest
   geometry_msgs::PolygonStamped offsetAoI(double offset);
 
+  //function to calculate approximate coverage that a sensor can do with a given open angles (in rad) and range (in meters)
+  unsigned int calculateMaxSensorCoverage(unsigned int range, std::vector<double> open_angles);
+
   // function to return the visualization markers of a vector of polygons
   visualization_msgs::MarkerArray getPolygonVecVisualizationMarker(std::vector<geometry_msgs::PolygonStamped>, std::string);
-
-  // function to return the visualization markers of a vector of points
- // visualization_msgs::MarkerArray getPointVecVisualizationMarker(std::vector<geometry_msgs::Point>, std::string);
 
 
   /* ----------------------------------- */
@@ -333,7 +333,7 @@ protected:
   // string to contain the action name
   std::string action_name_;
 
-  // messages that are used to published feedback/result. NOTE: (not used yet)
+  // messages that are used to published feedback/result. NOTE: (not used yet) -b-
   seneka_sensor_placement::sensorPlacementFeedback action_feedback_;
   seneka_sensor_placement::sensorPlacementResult action_result_;
 

@@ -199,12 +199,6 @@ int particle::getPrioritySum()
   return priority_sum_;
 }
 
-// function to reset priority sum of the particle
-int particle::resetPrioritySum()
-{
-  priority_sum_=0;
-}
-
 // function to get targets_info_var
 std::vector<target_info_var> particle::getTargetsWithInfoVar()
 {
@@ -251,7 +245,6 @@ void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets
 //void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var)
 {
   priority_sum_ = priority_sum;
-  ROS_INFO_STREAM("setted priority sum to be " << priority_sum);
   targets_with_info_var_ = targets_with_info_var;
   covered_targets_num_ = 0;
   multiple_coverage_ = 0;
@@ -834,7 +827,7 @@ void particle::updateTargetsInfo(size_t sensor_index)
   }
 }
 
-//function to update the targets_with_info variable with raytracing (lookup table); with option to save no reset info for covered targets
+//function to update the targets_with_info variable with raytracing (lookup table); with option to lock some specific targets so that their info is not resetted in resetTargetsWithInfo() function
 void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_targets)
 {
   //clear vector of ray end points
@@ -916,8 +909,6 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
               targets_with_info_var_.at(cell_in_vector_coordinates).covered = true;
 
               //calculate the priority of target
-              //**NOTE!!: rays covering a cell multiple times will cause the target to falsely increase in priority
-              //only points of interest will contribute to the priority sum, as priority for all other points is zero
               priority_sum_ = priority_sum_ + pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority;
 
               if (lock_targets==true)

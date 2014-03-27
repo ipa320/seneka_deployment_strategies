@@ -105,7 +105,7 @@ private:
   int target_num_;
   int covered_targets_num_;
 
-  // priority sum -b-
+  // priority sum
   int priority_sum_;
 
   // covered targets by GreedyPSO
@@ -196,9 +196,6 @@ public:
   // function to reset the variable information for all targets and also reset priority_sum_ if requested
   void resetTargetsWithInfoVar();
 
-  // function to reset priority sum of the particle
-  int resetPrioritySum();
-
   // function that sets the map
   void setMap(const nav_msgs::OccupancyGrid & new_map);
 
@@ -238,7 +235,7 @@ public:
   // function to update the targets_with_info variable
   void updateTargetsInfo(size_t sensor_index);
 
-  //function to update the targets_with_info variable with raytracing (lookup table); with option to save no reset info for covered targets
+  //function to update the targets_with_info variable with raytracing (lookup table); with option to lock some specific targets so that their info is not resetted in resetTargetsWithInfo() function
   void updateTargetsInfoRaytracing(size_t sensor_index, bool lock_targets = false);
 
   // function to calculate the actual  and personal best coverage
