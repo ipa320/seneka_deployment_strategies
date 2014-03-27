@@ -1319,7 +1319,7 @@ void sensor_placement_node::runGS()
 
 }
 
-/*
+/* old function
 void sensor_placement_node::getGlobalBest()
 {
   // a new global best solution is accepted if

@@ -333,7 +333,7 @@ protected:
   // string to contain the action name
   std::string action_name_;
 
-  // messages that are used to published feedback/result. NOTE: (not used yet) -b-
+  // messages that are used to published feedback/result. NOTE: (not used yet)
   seneka_sensor_placement::sensorPlacementFeedback action_feedback_;
   seneka_sensor_placement::sensorPlacementResult action_result_;
 
