@@ -199,7 +199,7 @@ public:
   bool srvCB_PoI_set(std_srvs::Empty::Request &req,
                  std_srvs::Empty::Response &res)
   {
-    PoI_MA_pub_.publish(getPolygonVerticesVisualizationMarker(PoI_poly_, "PoI_set"));
+    PoI_MA_pub_.publish(getPolygonVerticesVisualizationMarker(PoI_poly_, "PoI_visualization_marker_size"));
     return true;
   }
 
@@ -241,12 +241,6 @@ public:
     }
     return points_ma;
   }
-
-
-
-
-
-
 
 
   // grabs a list of lists from the parameter server and returns a polygon

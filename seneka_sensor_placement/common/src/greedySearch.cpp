@@ -585,7 +585,7 @@ void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id)
   }
   //all rays checked
 
-  //update coverage of this position if it exceeds the coverage noted with old orientation at this position
+  //update coverage of this position if it exceeds the coverage noted with old orientation at this position (NOTE: this is old functionality! - to be removed)
   if(coverage_by_new_orientation>coverage_by_old_orientation)
   {
     GS_pool_[point_id].max_targets_covered = coverage_by_new_orientation;
