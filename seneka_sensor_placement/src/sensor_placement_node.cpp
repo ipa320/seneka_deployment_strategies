@@ -273,7 +273,6 @@ bool sensor_placement_node::preemptRequested()
 // function that gets executed immediately when the action is preempted
 void sensor_placement_node::preemptCB()
 {
-  ROS_INFO("Cancel action request received");
   //can be used later to do anything before the action gets aborted
 }
 
@@ -552,7 +551,7 @@ bool sensor_placement_node::getGSTargets()
     point_info dummy_point_info;
     point_info_vec_.assign(map_.info.width * map_.info.height, dummy_point_info);
     //create dummy GS_point_info to save information in the pool
-    GS_point_info dummy_GS_point_info;
+    GS_point dummy_GS_point;
 
     if(AoI_received_ == false)
     {
@@ -606,10 +605,10 @@ bool sensor_placement_node::getGSTargets()
                 if(fa_flag==false)
                 {
                   //given point is not occupied AND on the grid AND not in any forbidden area. So, save it as GS_target
-                  dummy_GS_point_info.p.x=i;
-                  dummy_GS_point_info.p.y=j;
-                  dummy_GS_point_info.max_targets_covered=0;
-                  GS_pool_.push_back(dummy_GS_point_info);
+                  dummy_GS_point.x=i;
+                  dummy_GS_point.y=j;
+         //         dummy_GS_point_info.max_targets_covered=0;
+                  GS_pool_.push_back(dummy_GS_point);
                   fa_flag=false;
                 }
                 else
@@ -621,10 +620,10 @@ bool sensor_placement_node::getGSTargets()
               else
               {
                 //given point is not occupied AND on the grid. So, save it as GS_target
-                dummy_GS_point_info.p.x=i;
-                dummy_GS_point_info.p.y=j;
-                dummy_GS_point_info.max_targets_covered=0;
-                GS_pool_.push_back(dummy_GS_point_info);
+                dummy_GS_point.x=i;
+                dummy_GS_point.y=j;
+        //        dummy_GS_point_info.max_targets_covered=0;
+                GS_pool_.push_back(dummy_GS_point);
               }
             }
           }
@@ -718,10 +717,10 @@ bool sensor_placement_node::getGSTargets()
                       if(fa_flag==false)
                       {
                         //given point is not occupied AND on the grid AND outside offset_AoI, all forbidden areas. So, save it as GS_target
-                        dummy_GS_point_info.p.x=i;
-                        dummy_GS_point_info.p.y=j;
-                        dummy_GS_point_info.max_targets_covered=0;
-                        GS_pool_.push_back(dummy_GS_point_info);
+                        dummy_GS_point.x=i;
+                        dummy_GS_point.y=j;
+              //          dummy_GS_point_info.max_targets_covered=0;
+                        GS_pool_.push_back(dummy_GS_point);
 
                       }
                       else
@@ -733,10 +732,10 @@ bool sensor_placement_node::getGSTargets()
                     else
                     {
                       //given point is not occupied AND on the grid AND outside offset_AoI. So, save it as GS_target
-                      dummy_GS_point_info.p.x=i;
-                      dummy_GS_point_info.p.y=j;
-                      dummy_GS_point_info.max_targets_covered=0;
-                      GS_pool_.push_back(dummy_GS_point_info);
+                      dummy_GS_point.x=i;
+                      dummy_GS_point.y=j;
+            //          dummy_GS_point_info.max_targets_covered=0;
+                      GS_pool_.push_back(dummy_GS_point);
                     }
                   }
                 }
@@ -770,10 +769,10 @@ bool sensor_placement_node::getGSTargets()
                       if(fa_flag==false)
                       {
                         //given point is not occupied AND on the grid AND not in any forbidden area. So, save it as GS_target
-                        dummy_GS_point_info.p.x=i;
-                        dummy_GS_point_info.p.y=j;
-                        dummy_GS_point_info.max_targets_covered=0;
-                        GS_pool_.push_back(dummy_GS_point_info);
+                        dummy_GS_point.x=i;
+                        dummy_GS_point.y=j;
+            //            dummy_GS_point_info.max_targets_covered=0;
+                        GS_pool_.push_back(dummy_GS_point);
                       }
                       else
                       {
@@ -785,10 +784,10 @@ bool sensor_placement_node::getGSTargets()
                     else
                     {
                       //given point is not occupied AND on the grid. So, save it as GS_target
-                      dummy_GS_point_info.p.x=i;
-                      dummy_GS_point_info.p.y=j;
-                      dummy_GS_point_info.max_targets_covered=0;
-                      GS_pool_.push_back(dummy_GS_point_info);
+                      dummy_GS_point.x=i;
+                      dummy_GS_point.y=j;
+        //              dummy_GS_point_info.max_targets_covered=0;
+                      GS_pool_.push_back(dummy_GS_point);
                     }
                   }
                 }
@@ -856,10 +855,10 @@ bool sensor_placement_node::getGSTargets()
                     if(fa_flag==false)
                     {
                       //given point is not occupied AND on the grid AND not in any forbidden area. So, save it as GS_target
-                      dummy_GS_point_info.p.x=i;
-                      dummy_GS_point_info.p.y=j;
-                      dummy_GS_point_info.max_targets_covered=0;
-                      GS_pool_.push_back(dummy_GS_point_info);
+                      dummy_GS_point.x=i;
+                      dummy_GS_point.y=j;
+             //         dummy_GS_point_info.max_targets_covered=0;
+                      GS_pool_.push_back(dummy_GS_point);
                     }
                     else
                     {
@@ -870,10 +869,10 @@ bool sensor_placement_node::getGSTargets()
                   else
                   {
                     //given point is not occupied AND on the grid. So, save it as GS_target
-                    dummy_GS_point_info.p.x=i;
-                    dummy_GS_point_info.p.y=j;
-                    dummy_GS_point_info.max_targets_covered=0;
-                    GS_pool_.push_back(dummy_GS_point_info);
+                    dummy_GS_point.x=i;
+                    dummy_GS_point.y=j;
+        //            dummy_GS_point_info.max_targets_covered=0;
+                    GS_pool_.push_back(dummy_GS_point);
                   }
                 }
               }
@@ -904,10 +903,10 @@ bool sensor_placement_node::getGSTargets()
                     if(fa_flag==false)
                     {
                       //given point is not occupied AND on the grid AND not in any forbidden area. So, save it as GS_target
-                      dummy_GS_point_info.p.x=i;
-                      dummy_GS_point_info.p.y=j;
-                      dummy_GS_point_info.max_targets_covered=0;
-                      GS_pool_.push_back(dummy_GS_point_info);
+                      dummy_GS_point.x=i;
+                      dummy_GS_point.y=j;
+     //                 dummy_GS_point_info.max_targets_covered=0;
+                      GS_pool_.push_back(dummy_GS_point);
                     }
                     else
                     {
@@ -918,10 +917,10 @@ bool sensor_placement_node::getGSTargets()
                   else
                   {
                     //given point is not occupied AND on the grid. So, save it as GS_target
-                    dummy_GS_point_info.p.x=i;
-                    dummy_GS_point_info.p.y=j;
-                    dummy_GS_point_info.max_targets_covered=0;
-                    GS_pool_.push_back(dummy_GS_point_info);
+                    dummy_GS_point.x=i;
+                    dummy_GS_point.y=j;
+         //           dummy_GS_point_info.max_targets_covered=0;
+                    GS_pool_.push_back(dummy_GS_point);
                   }
                 }
               }

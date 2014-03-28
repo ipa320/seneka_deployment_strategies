@@ -186,7 +186,7 @@ private:
   vector<point_info> point_info_vec_;
 
   // pool of points for Greedy placement of sensor (holds coordinates and max coverage information)
-  vector<GS_point_info> GS_pool_;
+  vector<GS_point> GS_pool_;
 
   // Greedy search object
   greedySearch GS_solution;
