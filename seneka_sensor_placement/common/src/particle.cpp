@@ -64,7 +64,7 @@ particle::particle()
   coverage_ = 0;
 
   // initialize coverage for GreedyPSO
-  gPSO_covered_targets_num_ = 0;
+  GreedyPSO_covered_targets_num_ = 0;
 
   // initialize personal best coverage
   pers_best_coverage_ = 0;
@@ -95,7 +95,7 @@ particle::particle(int num_of_sensors, int num_of_targets, FOV_2D_model sensor_m
   coverage_ = 0;
 
   // initialize coverage for GreedyPSO
-  gPSO_covered_targets_num_ = 0;
+  GreedyPSO_covered_targets_num_ = 0;
 
   // initialize personal best coverage
   pers_best_coverage_ = 0;
@@ -208,7 +208,7 @@ std::vector<target_info_var> particle::getTargetsWithInfoVar()
 // function to get number of targets covered after call to updateTargetsInfoRaytracing
 unsigned int particle::getNumOfTargetsCovered()
 {
-  return gPSO_covered_targets_num_;
+  return GreedyPSO_covered_targets_num_;
 }
 
 // function that sets the member varialbe sensor_um_ and reserves capacity for vector sensors_
@@ -242,7 +242,6 @@ void particle::setTargetsWithInfoFix(const std::vector<target_info_fix> & target
 
 // function to set the variable information for all targets
 void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var, int priority_sum)
-//void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var)
 {
   priority_sum_ = priority_sum;
   targets_with_info_var_ = targets_with_info_var;
@@ -253,7 +252,7 @@ void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets
 // function to reset the variable information for all targets
 void particle::resetTargetsWithInfoVar()
 {
-  #pragma omp parallel for  //NOTE: parallelized only when called from a non-parallel block. TODO: use omp_set_nested(n), also take into account that nested parallel regions will itself add an overhead
+  #pragma omp parallel for
     for(int i=0; i<targets_with_info_var_.size(); i++)
     {
       if (targets_with_info_var_.at(i).no_reset==false)
@@ -279,9 +278,7 @@ void particle::setAreaOfInterest(const geometry_msgs::PolygonStamped & new_poly)
   pArea_of_interest_ = & new_poly;
   if (pArea_of_interest_ == NULL)
     ROS_ERROR("AoI was not set correctly.");
-
 }
-
 
 // function that sets forbidden areas vector
 void particle::setForbiddenAreaVec(const std::vector<geometry_msgs::PolygonStamped> & new_forbidden_area_vec_)
@@ -289,9 +286,7 @@ void particle::setForbiddenAreaVec(const std::vector<geometry_msgs::PolygonStamp
   pForbidden_poly_ = & new_forbidden_area_vec_;
   if (pForbidden_poly_ == NULL)
     ROS_ERROR("Forbidden Area vector was not set correctly.");
-
 }
-
 
 // function that sets the opening angles for each sensor in the particle
 bool particle::setOpenAngles(std::vector<double> new_angles)
@@ -335,7 +330,6 @@ void particle::setLookupTable(const std::vector< std::vector<geometry_msgs::Poin
   else
     ROS_ERROR("LookupTable not set correctly");
 }
-
 
 // function to place the sensors randomly on the perimeter
 void particle::placeSensorsRandomlyOnPerimeter()
@@ -914,7 +908,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
               if (lock_targets==true)
               {
                 targets_with_info_var_.at(cell_in_vector_coordinates).no_reset=true;
-                gPSO_covered_targets_num_++;
+                GreedyPSO_covered_targets_num_++;
               }
 
               // increment the covered targets counter only if the given target is not covered by another sensor yet

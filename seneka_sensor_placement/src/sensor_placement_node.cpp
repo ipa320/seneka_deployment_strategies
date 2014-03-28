@@ -108,7 +108,7 @@ sensor_placement_node::sensor_placement_node()
   target_num_ = 0;
 
   // initialize total number of targets covered by GreedyPSO
-  total_gPSO_covered_targets_num_ = 0;
+  total_GreedyPSO_covered_targets_num_ = 0;
 
   // initialize best particle index
   best_particle_index_ = 0;
@@ -250,7 +250,7 @@ void sensor_placement_node::getParams()
 }
 
 
-// function to cancel the goal if requested by action client (sensor_placement_interface) and returns true
+// function to cancel the goal if requested by action client (sensor_placement_interface) and returns true if preepmtion is requested
 bool sensor_placement_node::preemptRequested()
 {
   // check if action preempt has been requested by the client
@@ -525,7 +525,7 @@ bool sensor_placement_node::getTargets()
 }
 
 
-// get greedy search targets
+// function to get a pool of points where the greedySearch algorithm looks for optimal coverage
 bool sensor_placement_node::getGSTargets()
 {
   // initialize result
@@ -550,7 +550,7 @@ bool sensor_placement_node::getGSTargets()
     //only if we received a map, we can get targets
     point_info dummy_point_info;
     point_info_vec_.assign(map_.info.width * map_.info.height, dummy_point_info);
-    //create dummy GS_point_info to save information in the pool
+    //create dummy GS_point to save information in the pool
     GS_point dummy_GS_point;
 
     if(AoI_received_ == false)
@@ -607,7 +607,6 @@ bool sensor_placement_node::getGSTargets()
                   //given point is not occupied AND on the grid AND not in any forbidden area. So, save it as GS_target
                   dummy_GS_point.x=i;
                   dummy_GS_point.y=j;
-         //         dummy_GS_point_info.max_targets_covered=0;
                   GS_pool_.push_back(dummy_GS_point);
                   fa_flag=false;
                 }
@@ -622,7 +621,6 @@ bool sensor_placement_node::getGSTargets()
                 //given point is not occupied AND on the grid. So, save it as GS_target
                 dummy_GS_point.x=i;
                 dummy_GS_point.y=j;
-        //        dummy_GS_point_info.max_targets_covered=0;
                 GS_pool_.push_back(dummy_GS_point);
               }
             }
@@ -719,7 +717,6 @@ bool sensor_placement_node::getGSTargets()
                         //given point is not occupied AND on the grid AND outside offset_AoI, all forbidden areas. So, save it as GS_target
                         dummy_GS_point.x=i;
                         dummy_GS_point.y=j;
-              //          dummy_GS_point_info.max_targets_covered=0;
                         GS_pool_.push_back(dummy_GS_point);
 
                       }
@@ -734,7 +731,6 @@ bool sensor_placement_node::getGSTargets()
                       //given point is not occupied AND on the grid AND outside offset_AoI. So, save it as GS_target
                       dummy_GS_point.x=i;
                       dummy_GS_point.y=j;
-            //          dummy_GS_point_info.max_targets_covered=0;
                       GS_pool_.push_back(dummy_GS_point);
                     }
                   }
@@ -771,7 +767,6 @@ bool sensor_placement_node::getGSTargets()
                         //given point is not occupied AND on the grid AND not in any forbidden area. So, save it as GS_target
                         dummy_GS_point.x=i;
                         dummy_GS_point.y=j;
-            //            dummy_GS_point_info.max_targets_covered=0;
                         GS_pool_.push_back(dummy_GS_point);
                       }
                       else
@@ -786,7 +781,6 @@ bool sensor_placement_node::getGSTargets()
                       //given point is not occupied AND on the grid. So, save it as GS_target
                       dummy_GS_point.x=i;
                       dummy_GS_point.y=j;
-        //              dummy_GS_point_info.max_targets_covered=0;
                       GS_pool_.push_back(dummy_GS_point);
                     }
                   }
@@ -857,7 +851,6 @@ bool sensor_placement_node::getGSTargets()
                       //given point is not occupied AND on the grid AND not in any forbidden area. So, save it as GS_target
                       dummy_GS_point.x=i;
                       dummy_GS_point.y=j;
-             //         dummy_GS_point_info.max_targets_covered=0;
                       GS_pool_.push_back(dummy_GS_point);
                     }
                     else
@@ -871,7 +864,6 @@ bool sensor_placement_node::getGSTargets()
                     //given point is not occupied AND on the grid. So, save it as GS_target
                     dummy_GS_point.x=i;
                     dummy_GS_point.y=j;
-        //            dummy_GS_point_info.max_targets_covered=0;
                     GS_pool_.push_back(dummy_GS_point);
                   }
                 }
@@ -905,7 +897,6 @@ bool sensor_placement_node::getGSTargets()
                       //given point is not occupied AND on the grid AND not in any forbidden area. So, save it as GS_target
                       dummy_GS_point.x=i;
                       dummy_GS_point.y=j;
-     //                 dummy_GS_point_info.max_targets_covered=0;
                       GS_pool_.push_back(dummy_GS_point);
                     }
                     else
@@ -919,7 +910,6 @@ bool sensor_placement_node::getGSTargets()
                     //given point is not occupied AND on the grid. So, save it as GS_target
                     dummy_GS_point.x=i;
                     dummy_GS_point.y=j;
-         //           dummy_GS_point_info.max_targets_covered=0;
                     GS_pool_.push_back(dummy_GS_point);
                   }
                 }
@@ -940,6 +930,7 @@ bool sensor_placement_node::getGSTargets()
   return result;
 }
 
+//function to return an area of interest polygon which is offsetted according to the offset ińput
 geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
 {
   //intializations
@@ -1188,7 +1179,7 @@ void sensor_placement_node::GreedyPSOptimize()
   int iter = 0;
   std::vector<geometry_msgs::Pose> global_pose;
   //initialize total coverage by GreedyPSO
-  total_gPSO_covered_targets_num_ = 0;
+  total_GreedyPSO_covered_targets_num_ = 0;
 
   //iterate whole swarm optimization step as many times as the number of sensors
   for (unsigned int sensor_iter = 0; sensor_iter<sensor_num_; sensor_iter++)
@@ -1222,7 +1213,6 @@ void sensor_placement_node::GreedyPSOptimize()
       //publish the actual global best visualization
       marker_array_pub_.publish(global_best_.getVisualizationMarkers());
     }
-
 
     //iteration step
     //continue calculation as long as there are iteration steps left and actual best coverage (per sensor) is
@@ -1270,8 +1260,8 @@ void sensor_placement_node::GreedyPSOptimize()
     //now lock targets that the global best is covering and count the priority sum for locked targets
     global_best_.updateTargetsInfoRaytracing(0, true);
     //calculate and print total coverage by GreedyPSO
-    total_gPSO_covered_targets_num_ = total_gPSO_covered_targets_num_+ global_best_.getNumOfTargetsCovered();
-    ROS_INFO_STREAM("Total coverage by GreedyPSO: " << (double) total_gPSO_covered_targets_num_/target_num_);
+    total_GreedyPSO_covered_targets_num_ = total_GreedyPSO_covered_targets_num_+ global_best_.getNumOfTargetsCovered();
+    ROS_INFO_STREAM("Total coverage by GreedyPSO: " << (double) total_GreedyPSO_covered_targets_num_/target_num_);
     //set updated targets for whole particle swarm i.e. make the state of targets_with_info_var
     //TODO: use a pointer for targetsWithInfo instead of each particle having their own targetsWithInfo object
     for(size_t i = 0; i < particle_swarm_.size(); i++)
@@ -1732,8 +1722,6 @@ bool sensor_placement_node::testServiceCallback()
   ROS_INFO_STREAM("creating lookup tables for dummy particle..");
   dummy_particle.setLookupTable(& lookup_table_);
   ROS_INFO_STREAM("lookup tables created.");
-
-
 
   particle_swarm_.assign(particle_num_,dummy_particle);
 

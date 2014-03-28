@@ -162,7 +162,7 @@ private:
   particle sol_particle_;
 
   // total number of targets covered by GreedyPSO
-  unsigned int total_gPSO_covered_targets_num_;
+  unsigned int total_GreedyPSO_covered_targets_num_;
 
   // vector storing the positions global best solution of the particle swarm
   particle global_best_;
@@ -251,7 +251,7 @@ public:
   // function to get an array of targets from the map and the area of interest specified as polygon
   bool getTargets();
 
-  // function to get greedy search targets
+  // function to get a pool of points where the greedySearch algorithm looks for optimal coverage
   bool getGSTargets();
 
   // function to start map service and create look up tables
@@ -278,7 +278,7 @@ public:
   // function to get the current global best solution
   void getGlobalBest();
 
-  // function to create an offsetted polygon from area of interest
+  //function to return an area of interest polygon which is offsetted according to the offset ińput
   geometry_msgs::PolygonStamped offsetAoI(double offset);
 
   //function to calculate approximate coverage that a sensor can do with a given open angles (in rad) and range (in meters)

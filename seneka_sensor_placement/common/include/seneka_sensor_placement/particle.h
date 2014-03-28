@@ -109,7 +109,7 @@ private:
   int priority_sum_;
 
   // covered targets by GreedyPSO
-  int gPSO_covered_targets_num_;
+  int GreedyPSO_covered_targets_num_;
 
   // actual coverage
   double coverage_;

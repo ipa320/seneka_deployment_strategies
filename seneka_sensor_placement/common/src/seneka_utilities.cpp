@@ -66,12 +66,6 @@ namespace seneka_utilities
     std::fill(covered_by_sensor.begin(), covered_by_sensor.end(), false);
   }
 
-  // function to reset the targets covered info
-  void GS_point_info::reset()
-  {
-    max_targets_covered = 0;
-  }
-
   /* ----------------------------------- */
   /* -------------- MATH --------------- */
   /* ----------------------------------- */
