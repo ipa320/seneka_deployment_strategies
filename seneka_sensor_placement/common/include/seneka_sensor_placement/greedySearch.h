@@ -141,7 +141,7 @@ public:
   bool newGreedyPlacement(size_t sensor_index);
 
   // function to update the GS_point_info
-  void updateGSpointsRaytracing(size_t sensor_index, int point_id);
+  void updateGSpointsRaytracing(size_t sensor_index);
 
   // function to get the coverage done by the sensor
   int getCoverageRaytracing(size_t sensor_index);
