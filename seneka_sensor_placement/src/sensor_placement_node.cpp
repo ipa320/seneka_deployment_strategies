@@ -1166,7 +1166,7 @@ void sensor_placement_node::PSOptimize()
 
 }
 
-// function for the  particle-swarm-optimization with Greedy optimization
+// function to execute PSO as many times as the number of sensors. Each PSO run gives placement result for one sensor at a time
 void sensor_placement_node::GreedyPSOptimize()
 {
   //clock_t t_start;
@@ -1781,7 +1781,7 @@ void sensor_placement_node::forbiddenAreaCB(const geometry_msgs::PolygonStamped:
   fa_marker_array_pub_.publish(getPolygonVecVisualizationMarker(forbidden_area_vec_, "forbidden_area"));
 }
 
-//function to calculate approximate coverage that a sensor can do with a given open angles (in rad) and range (in meters)
+//function to calculate a rough approximate of coverage that a sensor can do with a given open angles (in rad) and range (in meters)
 unsigned int sensor_placement_node::calculateMaxSensorCoverage(unsigned int range, std::vector<double> open_angles)
 {
   //calculate FOV from open angles

@@ -269,7 +269,7 @@ public:
   // function for the actual partcile-swarm-optimization
   void PSOptimize();
 
-  // function for the  particle-swarm-optimization with Greedy optimization
+  // function to execute PSO as many times as the number of sensors. Each PSO run gives placement result for one sensor at a time
   void GreedyPSOptimize();
 
   // function to run Greedy Search Algorithm
@@ -281,7 +281,7 @@ public:
   //function to return an area of interest polygon which is offsetted according to the offset ińput
   geometry_msgs::PolygonStamped offsetAoI(double offset);
 
-  //function to calculate approximate coverage that a sensor can do with a given open angles (in rad) and range (in meters)
+  //function to calculate a rough approximate of coverage that a sensor can do with a given open angles (in rad) and range (in meters)
   unsigned int calculateMaxSensorCoverage(unsigned int range, std::vector<double> open_angles);
 
   // function to return the visualization markers of a vector of polygons
