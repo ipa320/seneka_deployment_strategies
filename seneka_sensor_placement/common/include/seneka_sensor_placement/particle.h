@@ -105,6 +105,9 @@ private:
   int target_num_;
   int covered_targets_num_;
 
+  // priority sum
+  int priority_sum_;
+
   // covered targets by GreedyPSO
   int gPSO_covered_targets_num_;
 
@@ -165,6 +168,9 @@ public:
   // function to get multiple coverage index
   int getMultipleCoverageIndex();
 
+  // function to get the priority sum of the particle
+  int getPrioritySum();
+
   // function to get targets_info_var
   std::vector<target_info_var> getTargetsWithInfoVar();
 
@@ -184,9 +190,10 @@ public:
   void setTargetsWithInfoFix(const std::vector<target_info_fix> &targets_with_info_fix, int target_num);
 
   // function to set the variable information for all targets
-  void setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var);
+  void setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var, int priority_sum = 0);
+//  void setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var);
 
-  // function to reset the variable information for all targets
+  // function to reset the variable information for all targets and also reset priority_sum_ if requested
   void resetTargetsWithInfoVar();
 
   // function that sets the map
@@ -228,7 +235,7 @@ public:
   // function to update the targets_with_info variable
   void updateTargetsInfo(size_t sensor_index);
 
-  //function to update the targets_with_info variable with raytracing (lookup table); with option to save no reset info for covered targets
+  //function to update the targets_with_info variable with raytracing (lookup table); with option to lock some specific targets so that their info is not resetted in resetTargetsWithInfo() function
   void updateTargetsInfoRaytracing(size_t sensor_index, bool lock_targets = false);
 
   // function to calculate the actual  and personal best coverage

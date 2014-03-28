@@ -166,8 +166,6 @@ bool greedySearch::newGreedyPlacement(size_t sensor_index)
 
   //change the sensor open angles for search
   setOpenAngles(gs_ang_r);
-  //while searching, restrict updating of 'covered' info in updateGSpointsRaytracing
-  update_covered_info=false;
   //reset previous max coverage information before searching for new position
   resetMaxSensorCovInfo();
   //reset max targets covered information
@@ -199,11 +197,9 @@ bool greedySearch::newGreedyPlacement(size_t sensor_index)
         // set the action state to preempted, if it is śtill active
         if (as_->isActive())
         {
-         // ROS_INFO("Action preempted while executing Greedy Search");
           as_->setPreempted();
         }
-        //prepare to return
-        //reset the sensor open angles
+        //prepare to return: reset the sensor open angles
         new_ang_r[0] = num_of_slices*gs_ang_r[0];
         setOpenAngles(new_ang_r);
         return false;
@@ -242,12 +238,10 @@ bool greedySearch::newGreedyPlacement(size_t sensor_index)
   placement_point_id = getMaxSensorCovPointID();
   //place the sensor at max coverage point
   sensors_.at(sensor_index).setSensorPose(placement_pose);
-  //now update the 'covered' info
-  update_covered_info = true;
-  updateGSpointsRaytracing(sensor_index, placement_point_id, update_covered_info);
+  //now update the 'covered' info of the points
+  updateGSpointsRaytracing(sensor_index, placement_point_id);
 
   return true;
-
 }
 
 
@@ -331,6 +325,7 @@ int greedySearch::getCoverageRaytracing(size_t sensor_index)
             if(pPoint_info_vec_->at(cell_in_vector_coordinates).covered == false)
             {
               coverage_by_new_orientation++;
+              coverage_by_new_orientation+=pPoint_info_vec_->at(cell_in_vector_coordinates).priority;
             }
           }
           //cell not a potential target or occupied -> skip rest of this ray
@@ -414,12 +409,15 @@ int greedySearch::getCoverageRaytracing(size_t sensor_index)
   }
   //all rays checked
 
+
   return coverage_by_new_orientation;
 }
 
 
-//function to update the GS_point_info with raytracing
-void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id, bool update_covered_info)
+
+
+//function to update the GS_point_info
+void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id)
 {
   //clear vector of ray end points
   sensors_.at(sensor_index).clearRayEndPoints();
@@ -499,12 +497,11 @@ void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id, b
             if(pPoint_info_vec_->at(cell_in_vector_coordinates).covered == false)
             {
               coverage_by_new_orientation++;
-              //mark this position as covered only if the current pose is the final selected position for sensor placement
-              if(update_covered_info == true)
-              {
-                pPoint_info_vec_->at(cell_in_vector_coordinates).covered = true;
-                covered_targets_num_++;
-              }
+              coverage_by_new_orientation+=pPoint_info_vec_->at(cell_in_vector_coordinates).priority;
+              //mark this cell as covered as the current position of sensor is the final placement position
+              pPoint_info_vec_->at(cell_in_vector_coordinates).covered = true;
+              covered_targets_num_++;
+
             }
           }
           //cell not a potential target or occupied -> skip rest of this ray
@@ -588,7 +585,7 @@ void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id, b
   }
   //all rays checked
 
-  //update coverage of this position if it exceeds the coverage noted with old orientation at this position
+  //update coverage of this position if it exceeds the coverage noted with old orientation at this position (NOTE: this is old functionality! - to be removed)
   if(coverage_by_new_orientation>coverage_by_old_orientation)
   {
     GS_pool_[point_id].max_targets_covered = coverage_by_new_orientation;
@@ -811,9 +808,9 @@ visualization_msgs::MarkerArray greedySearch::getGridVisualizationMarker()
   visualization_msgs::Marker t_points;
   geometry_msgs::Point p;
   size_t GS_poolsize = GS_pool_.size();
-  unsigned int num_of_grids = 7;
+  unsigned int visualization_size_set = 7;
 
-  for (unsigned int i=0; i<num_of_grids; i++)
+  for (unsigned int i=0; i<visualization_size_set; i++)
   {
     // setup standard stuff
     t_points.header.frame_id = "/map";
@@ -830,7 +827,7 @@ visualization_msgs::MarkerArray greedySearch::getGridVisualizationMarker()
     t_points.color.g = 0.0;
     t_points.color.b = 1.0;
 
-    for (size_t point_id=0; point_id<GS_poolsize; point_id=point_id++)
+    for (size_t point_id=0; point_id<GS_poolsize; point_id++)
     {
 
       p.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);

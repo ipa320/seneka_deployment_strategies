@@ -68,6 +68,8 @@ sensor_placement_node::sensor_placement_node()
   // ros subscribers
   AoI_sub_ = nh_.subscribe("in_AoI_poly", 1,
                            &sensor_placement_node::AoICB, this);
+  PoI_sub_ = nh_.subscribe("out_PoI_marker_array", 1,                           //rename to in_PoI_MA
+                           &sensor_placement_node::PoICB, this);
   forbidden_area_sub_ = nh_.subscribe("in_forbidden_area", 1,
                                       &sensor_placement_node::forbiddenAreaCB, this);
 
@@ -110,6 +112,9 @@ sensor_placement_node::sensor_placement_node()
 
   // initialize best particle index
   best_particle_index_ = 0;
+
+  // initialize best priority sum
+  best_priority_sum_ = 0;
 
   // initialize other variables
   map_received_ = false;
@@ -287,7 +292,6 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
     {
       ROS_INFO("Starting 'PSO' action");
       startPSOCallback();
-      // action_result_ = best_cov_;
       break;
     }
 
@@ -295,7 +299,6 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
     {
       ROS_INFO("Starting 'GreeyPSO' action");
       startGreedyPSOCallback();
-      // action_result_ = (double) total_gPSO_covered_targets_num_/target_num_);
       break;
     }
 
@@ -303,7 +306,6 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
     {
       ROS_INFO("Starting 'GreadySearch' action");
       startGSCallback();
-      // action_result_ = GS_solution.calGScoverage();
       break;
     }
 
@@ -314,7 +316,6 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
       clipper_offset_value_ = goal->service_input_arg;
       polygon_offset_val_received_=true;
       startGSWithOffsetCallback();
-      // action_result_ = GS_solution.calGScoverage();
       break;
     }
 
@@ -344,7 +345,7 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
   {
     ROS_INFO("Action Succeeded");
     // set the action state to succeeded
-    as_.setSucceeded(); //-b- result?
+    as_.setSucceeded();
   }
   else
     ROS_INFO("Action was not completed");
@@ -385,9 +386,21 @@ bool sensor_placement_node::getTargets()
           dummy_target_info_fix.world_pos.y = mapToWorldY(j, map_);
           dummy_target_info_fix.world_pos.z = 0;
 
-          dummy_target_info_fix.forbidden = false;    //all targets are allowed unless found in forbidden area
+          dummy_target_info_fix.forbidden = false;                          //all targets are allowed unless found in forbidden area
           dummy_target_info_fix.occupied = true;
           dummy_target_info_fix.potential_target = -1;
+          dummy_target_info_fix.priority = 0;                                //all targets other than PoI have priority = 0
+
+          // check if current target is a point of interest
+          for (size_t ii=0; ii<PoI_vec_.size(); ii++)
+          {
+            if((world_Coord.x == PoI_vec_.at(ii).x) && (world_Coord.y == PoI_vec_.at(ii).y))
+            {
+              // found a point of interest, set priority
+              dummy_target_info_fix.priority = 100;
+              break;
+            }
+          }
 
           //variable information
           dummy_target_info_var.covered = false;
@@ -434,10 +447,22 @@ bool sensor_placement_node::getTargets()
           dummy_target_info_fix.world_pos.y = world_Coord.y;
           dummy_target_info_fix.world_pos.z = 0;
 
-          dummy_target_info_fix.forbidden = false;    //all targets are allowed unless found in forbidden area
+          dummy_target_info_fix.forbidden = false;                                         //all targets are allowed unless found in forbidden area
           dummy_target_info_fix.occupied = true;
           dummy_target_info_fix.potential_target = -1;
           dummy_target_info_fix.map_data = map_.data.at( j * map_.info.width + i);
+          dummy_target_info_fix.priority = 0;                                              //all targets other than PoI have priority = 0
+
+          // check if current target is a point of interest
+          for (size_t ii=0; ii<PoI_vec_.size(); ii++)
+          {
+            if((world_Coord.x == PoI_vec_.at(ii).x) && (world_Coord.y == PoI_vec_.at(ii).y))
+            {
+              // found a point of interest, set priority
+              dummy_target_info_fix.priority = 100;
+              break;
+            }
+          }
 
           //variable information
           dummy_target_info_var.covered = false;
@@ -462,7 +487,6 @@ bool sensor_placement_node::getTargets()
             if(map_.data.at( j * map_.info.width + i) == 0)
             {
               target_num_++;
-
               dummy_target_info_fix.occupied = false;
             }
           }
@@ -501,6 +525,7 @@ bool sensor_placement_node::getTargets()
   return result;
 }
 
+
 // get greedy search targets
 bool sensor_placement_node::getGSTargets()
 {
@@ -512,6 +537,8 @@ bool sensor_placement_node::getGSTargets()
   bool fa_flag = false;
   // intialize cell offset (number of cells to be skipped)
   unsigned int cell_offset = (unsigned int) round(GS_target_offset_/map_.info.resolution);
+  // calculate priority value for PoI
+  unsigned int priority_value = calculateMaxSensorCoverage(sensor_range_,open_angles_);
 
   if(cell_offset==0)
   {
@@ -541,6 +568,19 @@ bool sensor_placement_node::getGSTargets()
 
           dummy_point_info.occupied = true;
           dummy_point_info.potential_target = -1;
+          dummy_point_info.priority = 0;                              //all points other than PoI have priority = 0
+
+          // check if current point is a point of interest
+          for (size_t ii=0; ii<PoI_vec_.size(); ii++)
+          {
+            if((world_Coord.x == PoI_vec_.at(ii).x) && (world_Coord.y == PoI_vec_.at(ii).y))
+            {
+              // found a point of interest, set priority
+              ROS_INFO_STREAM("Setting " << priority_value << " as priority value for PoI at (" << world_Coord.x << "," << world_Coord.y << ")");
+              dummy_point_info.priority = priority_value;
+              break;
+            }
+          }
 
           //check if the given point is occupied or not; mark non-occupied ones as potential targets
           if(map_.data.at( j * map_.info.width + i) == 0)
@@ -635,6 +675,19 @@ bool sensor_placement_node::getGSTargets()
 
             dummy_point_info.occupied = true;
             dummy_point_info.potential_target = -1;
+            dummy_point_info.priority = 0;                              //all points other than PoI have priority = 0
+
+            // check if current point is a point of interest
+            for (size_t ii=0; ii<PoI_vec_.size(); ii++)
+            {
+              if((world_Coord.x == PoI_vec_.at(ii).x) && (world_Coord.y == PoI_vec_.at(ii).y))
+              {
+                // found a point of interest, set priority
+                ROS_INFO_STREAM("Setting " << priority_value << " as priority value for PoI at (" << world_Coord.x << "," << world_Coord.y << ")");
+                dummy_point_info.priority = priority_value;
+                break;
+              }
+            }
 
             // the given point lies withhin the polygon
             if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 2)
@@ -762,6 +815,19 @@ bool sensor_placement_node::getGSTargets()
 
             dummy_point_info.occupied = true;
             dummy_point_info.potential_target = -1;
+            dummy_point_info.priority = 0;                              //all points other than PoI have priority = 0
+
+            // check if current point is a point of interest
+            for (size_t ii=0; ii<PoI_vec_.size(); ii++)
+            {
+              if((world_Coord.x == PoI_vec_.at(ii).x) && (world_Coord.y == PoI_vec_.at(ii).y))
+              {
+                // found a point of interest, set priority
+                ROS_INFO_STREAM("Setting " << priority_value << " as priority value for PoI at (" << world_Coord.x << "," << world_Coord.y << ")");
+                dummy_point_info.priority = priority_value;
+                break;
+              }
+            }
 
             // the given point lies withhin the polygon
             if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 2)
@@ -1079,11 +1145,11 @@ void sensor_placement_node::PSOptimize()
   {
     global_pose = global_best_.getSolutionPositions();
     // update each particle in vector
-    #pragma omp parallel for
+   #pragma omp parallel for
       for(size_t i=0; i < particle_swarm_.size(); i++)
       {
         //t_start = clock();
-        particle_swarm_.at(i).resetTargetsWithInfoVar();
+        particle_swarm_.at(i).resetTargetsWithInfoVar();    //priority sum is also resetted here
         //t_end = clock();
         //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
         //ROS_INFO( "reset: %10.10f \n", t_diff);
@@ -1129,8 +1195,9 @@ void sensor_placement_node::GreedyPSOptimize()
   for (unsigned int sensor_iter = 0; sensor_iter<sensor_num_; sensor_iter++)
   {
     //reinitialize
-    iter=0;
-    best_cov_=0;
+    iter = 0;
+    best_cov_ = 0;
+    best_priority_sum_ = 0;
 
     //place sensors randomly on perimeter for each particle with random velocities
     if(AoI_received_)
@@ -1161,7 +1228,7 @@ void sensor_placement_node::GreedyPSOptimize()
     //iteration step
     //continue calculation as long as there are iteration steps left and actual best coverage (per sensor) is
     //lower than mininmal sensor coverage
-    // and goal cancellation is not requested by action client
+    //and goal cancellation is not requested by action client
     while(iter < iter_max_per_sensor_ && best_cov_ < min_sensor_cov_ && !preemptRequested())
     {
       global_pose = global_best_.getSolutionPositions();
@@ -1201,15 +1268,16 @@ void sensor_placement_node::GreedyPSOptimize()
     marker_array_pub_.publish(sol_particle_.getSolutionlVisualizationMarkers());
     //save the coverage by global best particle, first reset targets
     global_best_.resetTargetsWithInfoVar();
-    //now lock targets that the global best is covering
+    //now lock targets that the global best is covering and count the priority sum for locked targets
     global_best_.updateTargetsInfoRaytracing(0, true);
     //calculate and print total coverage by GreedyPSO
     total_gPSO_covered_targets_num_ = total_gPSO_covered_targets_num_+ global_best_.getNumOfTargetsCovered();
     ROS_INFO_STREAM("Total coverage by GreedyPSO: " << (double) total_gPSO_covered_targets_num_/target_num_);
-    //set updated targets for whole particle swarm. TODO: use a pointer for targetsWithInfo instead of each particle having their own targetsWithInfo object
+    //set updated targets for whole particle swarm i.e. make the state of targets_with_info_var
+    //TODO: use a pointer for targetsWithInfo instead of each particle having their own targetsWithInfo object
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
-      particle_swarm_.at(i).setTargetsWithInfoVar(global_best_.getTargetsWithInfoVar());
+      particle_swarm_.at(i).setTargetsWithInfoVar(global_best_.getTargetsWithInfoVar());    // priority_sum_ for each particle gets resetted here also
     }
   }
 }
@@ -1223,8 +1291,6 @@ void sensor_placement_node::runGS()
   ros::Duration end_time;
   std::vector<double> open_angles(2,0);
   bool placement_success = true;
-
-
 
   //start placing sensors one by one according to greedy algorithm
   for(size_t sensor_index = 0; sensor_index < sensor_num_; sensor_index++)
@@ -1253,6 +1319,7 @@ void sensor_placement_node::runGS()
 
 }
 
+/* old function
 void sensor_placement_node::getGlobalBest()
 {
   // a new global best solution is accepted if
@@ -1275,6 +1342,52 @@ void sensor_placement_node::getGlobalBest()
         global_best_ = particle_swarm_.at(i);
         global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
         best_particle_index_ = i;
+      }
+    }
+  }
+}
+*/
+
+//new function to find global best particle
+void sensor_placement_node::getGlobalBest()
+{
+  // a new global best solution is accepted if
+  // (1) more points of interest are being covered, or if same number of points of interest are being covered, but:
+  // (2) the coverage is higher than the old best coverage or
+  // (3) the coverage is equal to the old best coverage but there are less targets covered by multiple sensors
+  for(size_t i=0; i < particle_swarm_.size(); i++)
+  {
+    if (particle_swarm_.at(i).getPrioritySum() > best_priority_sum_)
+    {
+      //update the best_priority_sum_
+      best_priority_sum_ = particle_swarm_.at(i).getPrioritySum();
+      ROS_INFO_STREAM("best priority updated " << best_priority_sum_);
+
+      //update the best solution
+      best_cov_ = particle_swarm_.at(i).getActualCoverage();
+      global_best_ = particle_swarm_.at(i);
+      global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+      best_particle_index_ = i;
+    }
+
+    if (particle_swarm_.at(i).getPrioritySum() == best_priority_sum_)
+    {
+      if(particle_swarm_.at(i).getActualCoverage() > best_cov_)
+      {
+        best_cov_ = particle_swarm_.at(i).getActualCoverage();
+        global_best_ = particle_swarm_.at(i);
+        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+        best_particle_index_ = i;
+      }
+      else
+      {
+        if( (particle_swarm_.at(i).getActualCoverage() == best_cov_) && (particle_swarm_.at(i).getMultipleCoverageIndex() < global_best_multiple_coverage_ ))
+        {
+          best_cov_ = particle_swarm_.at(i).getActualCoverage();
+          global_best_ = particle_swarm_.at(i);
+          global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+          best_particle_index_ = i;
+        }
       }
     }
   }
@@ -1375,6 +1488,7 @@ bool sensor_placement_node::startPSOCallback()
   target_num_ = 0;
   best_cov_ = 0;
   best_particle_index_ = 0;
+  best_priority_sum_ = 0;
 
   ROS_INFO("PSO terminated successfully");
 
@@ -1431,6 +1545,7 @@ bool sensor_placement_node::startGreedyPSOCallback()
   target_num_ = 0;
   best_cov_ = 0;
   best_particle_index_ = 0;
+  best_priority_sum_ = 0;
 
   ROS_INFO("GreedyPSO terminated successfully");
 
@@ -1663,6 +1778,13 @@ void sensor_placement_node::AoICB(const geometry_msgs::PolygonStamped::ConstPtr 
   AoI_received_ = true;
 }
 
+// callback function saving the PoI received
+void sensor_placement_node::PoICB(const visualization_msgs::MarkerArray::ConstPtr &PoI)
+{
+  // save points of interest
+  PoI_vec_ = (*PoI).markers.at(0).points;
+}
+
 // callback function saving the forbidden area received
 void sensor_placement_node::forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_area)
 {
@@ -1670,6 +1792,25 @@ void sensor_placement_node::forbiddenAreaCB(const geometry_msgs::PolygonStamped:
   fa_received_ = true;
   //NOTE: get visualization function called again when a polygon is received
   fa_marker_array_pub_.publish(getPolygonVecVisualizationMarker(forbidden_area_vec_, "forbidden_area"));
+}
+
+//function to calculate approximate coverage that a sensor can do with a given open angles (in rad) and range (in meters)
+unsigned int sensor_placement_node::calculateMaxSensorCoverage(unsigned int range, std::vector<double> open_angles)
+{
+  //calculate FOV from open angles
+  unsigned int FOV = round((open_angles.at(0)-open_angles.at(1))*(180/PI));
+  if (FOV<0||FOV>360)
+  {
+    ROS_ERROR("invalid FOV calculation in greedySearch::calculateMaxSensorCoverage, using default 90 [degrees]");
+    FOV = 90;
+  }
+  //calculate total number of targets in a square that encloses a circle of radius(r) where, r = range of sensor
+  unsigned int N = (2 * range/map_.info.resolution) * (2 * range/map_.info.resolution);
+  //now calculate a rough upper bound on total targets that the sensor can cover using FOV
+  unsigned int max_sensor_coverage = N / ceil(360/FOV);
+  if (max_sensor_coverage < 100)
+    ROS_INFO_STREAM("WARNING! max_sensor_coverage = " << max_sensor_coverage);
+  return max_sensor_coverage;
 }
 
 // returns the visualization markers of a vector of polygons

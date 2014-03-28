@@ -69,9 +69,12 @@ particle::particle()
   // initialize personal best coverage
   pers_best_coverage_ = 0;
 
-  //initialize multiple coverage indices
+  // initialize multiple coverage indices
   multiple_coverage_ = 0;
   pers_best_multiple_coverage_ = 0;
+
+  // initialize priority sum
+  priority_sum_ = 0;
 
   // initialize coverage matrix
 
@@ -100,6 +103,9 @@ particle::particle(int num_of_sensors, int num_of_targets, FOV_2D_model sensor_m
   // initialize multiple coverage indices
   multiple_coverage_ = 0;
   pers_best_multiple_coverage_ = 0;
+
+  // initialize priority sum
+  priority_sum_ = 0;
 
 // initialize sensor vector with as many entries as specified by sensors_num_
   sensors_.assign(sensor_num_, sensor_model);
@@ -187,6 +193,12 @@ int particle::getMultipleCoverageIndex()
   return multiple_coverage_;
 }
 
+// function to get the priority sum of the particle
+int particle::getPrioritySum()
+{
+  return priority_sum_;
+}
+
 // function to get targets_info_var
 std::vector<target_info_var> particle::getTargetsWithInfoVar()
 {
@@ -229,8 +241,10 @@ void particle::setTargetsWithInfoFix(const std::vector<target_info_fix> & target
 }
 
 // function to set the variable information for all targets
-void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var)
+void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var, int priority_sum)
+//void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var)
 {
+  priority_sum_ = priority_sum;
   targets_with_info_var_ = targets_with_info_var;
   covered_targets_num_ = 0;
   multiple_coverage_ = 0;
@@ -246,6 +260,7 @@ void particle::resetTargetsWithInfoVar()
         targets_with_info_var_.at(i).reset();
     }
 
+  priority_sum_ = 0;
   covered_targets_num_ = 0;
   multiple_coverage_ = 0;
 }
@@ -812,7 +827,7 @@ void particle::updateTargetsInfo(size_t sensor_index)
   }
 }
 
-//function to update the targets_with_info variable with raytracing (lookup table); with option to save no reset info for covered targets
+//function to update the targets_with_info variable with raytracing (lookup table); with option to lock some specific targets so that their info is not resetted in resetTargetsWithInfo() function
 void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_targets)
 {
   //clear vector of ray end points
@@ -892,6 +907,9 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
             {
               // now the given target is covered by at least one sensor
               targets_with_info_var_.at(cell_in_vector_coordinates).covered = true;
+
+              //calculate the priority of target
+              priority_sum_ = priority_sum_ + pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority;
 
               if (lock_targets==true)
               {

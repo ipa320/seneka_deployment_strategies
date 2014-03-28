@@ -2,6 +2,8 @@ area_of_interest: [[90, 120], [210, 120], [210, 200], [90, 200]]
 #area_of_interest: [[120, 140], [140, 140], [140, 160], [120, 160]]
 #area_of_interest: [[120, 140], [140, 140], [170, 170], [170, 190], [130, 160], [120, 170], [110, 150], [120, 160]]
 
+points_of_interest: [[105, 150], [115, 150], [160, 195], [200, 130], [200,170]]
+
 #parameter for number of forbidden areas (which are going to be specified)
 number_of_forbidden_areas: 5
 
