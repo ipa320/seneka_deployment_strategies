@@ -111,17 +111,6 @@ namespace seneka_utilities
     unsigned int y;
   };
 
-  struct GS_point_info
-  {
-    //co-ordinates of this point
-    GS_point p;
-    //maximum number of targets covered
-    unsigned int max_targets_covered;
-    // function to reset the GS point information
-    void reset();
-
-  };
-
 
   struct point_info
   {

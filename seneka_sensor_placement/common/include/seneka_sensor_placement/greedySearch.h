@@ -86,7 +86,7 @@ private:
   std::vector<point_info> * pPoint_info_vec_;
 
   // std-vector for storing Greedy Search targets
-  std::vector<GS_point_info> GS_pool_;
+  std::vector<GS_point> GS_pool_;
 
   // opening angles of slice FOV
   std::vector<double> slice_open_angles_;
@@ -107,8 +107,6 @@ private:
   double coverage_;
 
   // maximum sensor coverage information
-  int max_sensor_cov_;
-  int max_sensor_cov_point_id_;
   geometry_msgs::Pose max_sensor_cov_pose_;
 
   // actual area of interest to be covered by the sensor nodes
@@ -140,8 +138,8 @@ public:
   // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
   bool newGreedyPlacement(size_t sensor_index);
 
-  // function to update the GS_point_info
-  void updateGSpointsRaytracing(size_t sensor_index, int point_id);
+ //function to update the covered info of the points (i.e. targets)
+  void updateCoveredInfoRaytracing(size_t sensor_index);
 
   // function to get the coverage done by the sensor
   int getCoverageRaytracing(size_t sensor_index);
@@ -151,12 +149,6 @@ public:
 
 
   // ************************ getter functions ************************
-
-  // function to get maximum sensor coverage
-  int getMaxSensorCov();
-
-  // function to get maximum sensor coverage point ID
-  int getMaxSensorCovPointID();
 
   // function to get maximum sensor coverage pose
   geometry_msgs::Pose getMaxSensorCovPOSE();
@@ -182,7 +174,7 @@ public:
   void setPointInfoVec(std::vector<point_info> & point_info_vec, int target_num);
 
   // function to set the information for GS pool
-  void setGSpool(const std::vector<GS_point_info> &GS_pool);
+  void setGSpool(const std::vector<GS_point> &GS_pool);
 
   // function to reset the max targets covered information for all points in GS pool
   void resetGSpool();

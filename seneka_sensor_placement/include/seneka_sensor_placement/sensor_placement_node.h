@@ -162,7 +162,7 @@ private:
   particle sol_particle_;
 
   // total number of targets covered by GreedyPSO
-  unsigned int total_gPSO_covered_targets_num_;
+  unsigned int total_GreedyPSO_covered_targets_num_;
 
   // vector storing the positions global best solution of the particle swarm
   particle global_best_;
@@ -186,7 +186,7 @@ private:
   vector<point_info> point_info_vec_;
 
   // pool of points for Greedy placement of sensor (holds coordinates and max coverage information)
-  vector<GS_point_info> GS_pool_;
+  vector<GS_point> GS_pool_;
 
   // Greedy search object
   greedySearch GS_solution;
@@ -251,7 +251,7 @@ public:
   // function to get an array of targets from the map and the area of interest specified as polygon
   bool getTargets();
 
-  // function to get greedy search targets
+  // function to get a pool of points where the greedySearch algorithm looks for optimal coverage
   bool getGSTargets();
 
   // function to start map service and create look up tables
@@ -269,7 +269,7 @@ public:
   // function for the actual partcile-swarm-optimization
   void PSOptimize();
 
-  // function for the  particle-swarm-optimization with Greedy optimization
+  // function to execute PSO as many times as the number of sensors. Each PSO run gives placement result for one sensor at a time
   void GreedyPSOptimize();
 
   // function to run Greedy Search Algorithm
@@ -278,10 +278,10 @@ public:
   // function to get the current global best solution
   void getGlobalBest();
 
-  // function to create an offsetted polygon from area of interest
+  //function to return an area of interest polygon which is offsetted according to the offset ińput
   geometry_msgs::PolygonStamped offsetAoI(double offset);
 
-  //function to calculate approximate coverage that a sensor can do with a given open angles (in rad) and range (in meters)
+  //function to calculate a rough approximate of coverage that a sensor can do with a given open angles (in rad) and range (in meters)
   unsigned int calculateMaxSensorCoverage(unsigned int range, std::vector<double> open_angles);
 
   // function to return the visualization markers of a vector of polygons
