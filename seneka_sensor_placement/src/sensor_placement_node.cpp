@@ -53,38 +53,38 @@
 // constructor
 sensor_placement_node::sensor_placement_node()
 //initializer list
-:as_(
+: nh_(std::string("")),
+  as_(
      nh_,                                                                             //node handle
-     "sensorPlacementActionServer",                                                   //name the action server
+     std::string("sensorPlacementActionServer"),                                      //name the action server
      boost::bind(&sensor_placement_node::executeGoalCB, this, _1),                    //bind the goal callback function
-     false),                                                                         //option to automatically spin a thread
-     action_name_("sensorPlacementAction")                                            //name the action
+     false),                                                                          //option to automatically spin a thread
+     action_name_(std::string("sensorPlacementAction"))                               //name the action
 {
 
   // create node handles
-  nh_ = ros::NodeHandle();
-  pnh_ = ros::NodeHandle("~");
+  pnh_ = ros::NodeHandle(std::string("~"));
 
   // ros subscribers
-  AoI_sub_ = nh_.subscribe("in_AoI_poly", 1,
+  AoI_sub_ = nh_.subscribe(std::string("in_AoI_poly"), 1,
                            &sensor_placement_node::AoICB, this);
-  PoI_sub_ = nh_.subscribe("out_PoI_marker_array", 1,                           //rename to in_PoI_MA
+  PoI_sub_ = nh_.subscribe(std::string("out_PoI_marker_array"), 1,                           //rename to in_PoI_MA
                            &sensor_placement_node::PoICB, this);
-  forbidden_area_sub_ = nh_.subscribe("in_forbidden_area", 1,
+  forbidden_area_sub_ = nh_.subscribe(std::string("in_forbidden_area"), 1,
                                       &sensor_placement_node::forbiddenAreaCB, this);
 
   // ros publishers
-  nav_path_pub_ = nh_.advertise<nav_msgs::Path>("out_path",1,true);
-  marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1,true);
-  map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1,true);
-  map_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>("out_cropped_map_metadata",1,true);
-  offset_AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("offset_AoI", 1,true);
-  GS_targets_grid_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("GS_targets_grid",1,true);
-  fa_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("fa_marker_array",1,true);
+  nav_path_pub_ = nh_.advertise<nav_msgs::Path>(std::string("out_path"),1,true);
+  marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(std::string("out_marker_array"),1,true);
+  map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>(std::string("out_cropped_map"),1,true);
+  map_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>(std::string("out_cropped_map_metadata"),1,true);
+  offset_AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>(std::string("offset_AoI"), 1,true);
+  GS_targets_grid_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(std::string("GS_targets_grid"),1,true);
+  fa_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(std::string("fa_marker_array"),1,true);
 
 
   // ros service clients
-  sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>("static_map");
+  sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>(std::string("static_map"));
 
   //register the preempt callback function
   as_.registerPreemptCallback(boost::bind(&sensor_placement_node::preemptCB, this));
@@ -132,121 +132,123 @@ sensor_placement_node::~sensor_placement_node(){}
 // function to get the ROS parameters from yaml-file
 void sensor_placement_node::getParams()
 {
-  if(!pnh_.hasParam("number_of_sensors"))
+  int tmp = 0;
+  if(!pnh_.hasParam(std::string("number_of_sensors")))
   {
     ROS_WARN("No parameter number_of_sensors on parameter server. Using default [5]");
   }
-  pnh_.param("number_of_sensors",sensor_num_,5);
+  pnh_.param(std::string("number_of_sensors"),tmp,5);
+  sensor_num_ = (unsigned int) tmp;
 
-  if(!pnh_.hasParam("max_sensor_range"))
+  if(!pnh_.hasParam(std::string("max_sensor_range")))
   {
     ROS_WARN("No parameter max_sensor_range on parameter server. Using default [5.0 in m]");
   }
-  pnh_.param("max_sensor_range",sensor_range_,5.0);
+  pnh_.param(std::string("max_sensor_range"),sensor_range_,5.0);
 
   double open_angle_1, open_angle_2;
 
-  if(!pnh_.hasParam("open_angle_1"))
+  if(!pnh_.hasParam(std::string("open_angle_1")))
   {
     ROS_WARN("No parameter open_angle_1 on parameter server. Using default [1.5708 in rad]");
   }
-  pnh_.param("open_angle_1",open_angle_1,1.5708);
+  pnh_.param(std::string("open_angle_1"),open_angle_1,1.5708);
 
   open_angles_.push_back(open_angle_1);
 
-  if(!pnh_.hasParam("open_angle_2"))
+  if(!pnh_.hasParam(std::string("open_angle_2")))
   {
     ROS_WARN("No parameter open_angle_2 on parameter server. Using default [0.0 in rad]");
   }
-  pnh_.param("open_angle_2",open_angle_2,0.0);
+  pnh_.param(std::string("open_angle_2"),open_angle_2,0.0);
 
   open_angles_.push_back(open_angle_2);
 
-  if(!pnh_.hasParam("max_linear_sensor_velocity"))
+  if(!pnh_.hasParam(std::string("max_linear_sensor_velocity")))
   {
     ROS_WARN("No parameter max_linear_sensor_velocity on parameter server. Using default [1.0]");
   }
-  pnh_.param("max_linear_sensor_velocity",max_lin_vel_,1.0);
+  pnh_.param(std::string("max_linear_sensor_velocity"),max_lin_vel_,1.0);
 
-  if(!pnh_.hasParam("max_angular_sensor_velocity"))
+  if(!pnh_.hasParam(std::string("max_angular_sensor_velocity")))
   {
     ROS_WARN("No parameter max_angular_sensor_velocity on parameter server. Using default [0.5236]");
   }
-  pnh_.param("max_angular_sensor_velocity",max_ang_vel_,0.5236);
+  pnh_.param(std::string("max_angular_sensor_velocity"),max_ang_vel_,0.5236);
 
-  if(!pnh_.hasParam("number_of_particles"))
+  if(!pnh_.hasParam(std::string("number_of_particles")))
   {
     ROS_WARN("No parameter number_of_particles on parameter server. Using default [20]");
   }
-  pnh_.param("number_of_particles",particle_num_,20);
+  pnh_.param(std::string("number_of_particles"),particle_num_,20);
 
-  if(!pnh_.hasParam("max_num_iterations"))
+  if(!pnh_.hasParam(("max_num_iterations")))
   {
     ROS_WARN("No parameter max_num_iterations on parameter server. Using default [400]");
   }
-  pnh_.param("max_num_iterations",iter_max_,400);
+  pnh_.param(std::string("max_num_iterations"),iter_max_,400);
 
-  if(!pnh_.hasParam("max_num_iterations_per_sensor"))
+  if(!pnh_.hasParam(std::string("max_num_iterations_per_sensor")))
   {
     ROS_WARN("No parameter max_num_iterations_per_sensor on parameter server. Using default [30]");
   }
-  pnh_.param("max_num_iterations_per_sensor",iter_max_per_sensor_,30);
+  pnh_.param(std::string("max_num_iterations_per_sensor"),iter_max_per_sensor_,30);
 
-  if(!pnh_.hasParam("min_coverage_to_stop"))
+  if(!pnh_.hasParam(std::string("min_coverage_to_stop")))
   {
     ROS_WARN("No parameter min_coverage_to_stop on parameter server. Using default [0.95]");
   }
-  pnh_.param("min_coverage_to_stop",min_cov_,0.95);
+  pnh_.param(("min_coverage_to_stop"),min_cov_,0.95);
 
-  if(!pnh_.hasParam("min_sensor_coverage_to_stop"))
+  if(!pnh_.hasParam(("min_sensor_coverage_to_stop")))
   {
     ROS_WARN("No parameter min_sensor_coverage_to_stop on parameter server. Using default [0.08]");
   }
-  pnh_.param("min_sensor_coverage_to_stop",min_sensor_cov_, 0.08);
+  pnh_.param(("min_sensor_coverage_to_stop"),min_sensor_cov_, 0.08);
 
   // get PSO configuration parameters
-  if(!pnh_.hasParam("c1"))
+  if(!pnh_.hasParam(std::string("c1")))
   {
     ROS_WARN("No parameter c1 on parameter server. Using default [0.729]");
   }
-  pnh_.param("c1",PSO_param_1_,0.729);
+  pnh_.param(std::string("c1"),PSO_param_1_,0.729);
 
-  if(!pnh_.hasParam("c2"))
+  if(!pnh_.hasParam(std::string("c2")))
   {
     ROS_WARN("No parameter c2 on parameter server. Using default [1.49445]");
   }
-  pnh_.param("c2",PSO_param_2_,1.49445);
+  pnh_.param(std::string("c2"),PSO_param_2_,1.49445);
 
-  if(!pnh_.hasParam("c3"))
+  if(!pnh_.hasParam(std::string("c3")))
   {
     ROS_WARN("No parameter c3 on parameter server. Using default [1.49445]");
   }
-  pnh_.param("c3",PSO_param_3_,1.49445);
+  pnh_.param(std::string("c3"),PSO_param_3_,1.49445);
 
   // get Greedy Search algorithm parameters
   double slice_open_angle_1, slice_open_angle_2;
 
-  if(!pnh_.hasParam("slice_open_angle_1"))
+  if(!pnh_.hasParam(std::string("slice_open_angle_1")))
   {
     ROS_WARN("No parameter slice_open_angle_1 on parameter server. Using default [1.5708 in rad]");
   }
-  pnh_.param("slice_open_angle_1",slice_open_angle_1,1.5708);
+  pnh_.param(std::string("slice_open_angle_1"),slice_open_angle_1,1.5708);
 
   slice_open_angles_.push_back(slice_open_angle_1);
 
-  if(!pnh_.hasParam("slice_open_angle_2"))
+  if(!pnh_.hasParam(std::string("slice_open_angle_2")))
   {
     ROS_WARN("No parameter slice_open_angle_2 on parameter server. Using default [0.0 in rad]");
   }
-  pnh_.param("slice_open_angle_2",slice_open_angle_2,0.0);
+  pnh_.param(std::string("slice_open_angle_2"),slice_open_angle_2,0.0);
 
   slice_open_angles_.push_back(slice_open_angle_2);
 
-  if(!pnh_.hasParam("GS_target_offset"))
+  if(!pnh_.hasParam(std::string("GS_target_offset")))
   {
     ROS_WARN("No parameter GS_target_offset on parameter server. Using default [5.0 in m]");
   }
-  pnh_.param("GS_target_offset",GS_target_offset_, 5.0);
+  pnh_.param(std::string("GS_target_offset"),GS_target_offset_, 5.0);
 }
 
 
@@ -525,7 +527,7 @@ bool sensor_placement_node::getTargets()
 }
 
 
-// function to get a pool of points where the greedySearch algorithm looks for optimal coverage
+// get a pool of points where the greedySearch algorithm looks for optimal coverage
 bool sensor_placement_node::getGSTargets()
 {
   // initialize result
@@ -653,7 +655,7 @@ bool sensor_placement_node::getGSTargets()
         if (!offset_AoI.polygon.points.empty())
         {
           //publish offset_AoI
-          offset_AoI.header.frame_id = "/map";
+          offset_AoI.header.frame_id = std::string("/map");
           offset_AoI_pub_.publish(offset_AoI);
         }
         else
@@ -932,7 +934,7 @@ bool sensor_placement_node::getGSTargets()
   return result;
 }
 
-//function to return an area of interest polygon which is offsetted according to the offset ińput
+// return an area of interest polygon which is offsetted according to the offset input
 geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
 {
   //intializations
@@ -982,7 +984,7 @@ geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
     }
 
     // show output
-    for (int i=0; i<offset_AoI.polygon.points.size(); i++)
+    for (unsigned int i=0; i<offset_AoI.polygon.points.size(); i++)
     {
       ROS_INFO_STREAM("offset_AoI point " << i << " (" << offset_AoI.polygon.points.at(i).x << "," << offset_AoI.polygon.points.at(i).y << ")" ) ;
     }
@@ -1121,9 +1123,9 @@ void sensor_placement_node::initializeGS()
 void sensor_placement_node::PSOptimize()
 {
 
-  clock_t t_start;
-  clock_t t_end;
-  double  t_diff;
+  // clock_t t_start;
+  // clock_t t_end;
+  // double  t_diff;
 
   // PSO-iterator
   int iter = 0;
@@ -1137,7 +1139,7 @@ void sensor_placement_node::PSOptimize()
   {
     global_pose = global_best_.getSolutionPositions();
     // update each particle in vector
-   #pragma omp parallel for
+    #pragma omp parallel for
       for(size_t i=0; i < particle_swarm_.size(); i++)
       {
         //t_start = clock();
@@ -1168,7 +1170,7 @@ void sensor_placement_node::PSOptimize()
 
 }
 
-// function to execute PSO as many times as the number of sensors. Each PSO run gives placement result for one sensor at a time
+// execute PSO as many times as the number of sensors. Each PSO run gives placement result for one sensor at a time
 void sensor_placement_node::GreedyPSOptimize()
 {
   //clock_t t_start;
@@ -1309,35 +1311,6 @@ void sensor_placement_node::runGS()
   }
 
 }
-
-/* old function
-void sensor_placement_node::getGlobalBest()
-{
-  // a new global best solution is accepted if
-  // (1) the coverage is higher than the old best coverage or
-  // (2) the coverage is equal to the old best coverage but there are less targets covered by multiple sensors
-  for(size_t i=0; i < particle_swarm_.size(); i++)
-  {
-    if(particle_swarm_.at(i).getActualCoverage() > best_cov_)
-    {
-      best_cov_ = particle_swarm_.at(i).getActualCoverage();
-      global_best_ = particle_swarm_.at(i);
-      global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
-      best_particle_index_ = i;
-    }
-    else
-    {
-      if( (particle_swarm_.at(i).getActualCoverage() == best_cov_) && (particle_swarm_.at(i).getMultipleCoverageIndex() < global_best_multiple_coverage_ ))
-      {
-        best_cov_ = particle_swarm_.at(i).getActualCoverage();
-        global_best_ = particle_swarm_.at(i);
-        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
-        best_particle_index_ = i;
-      }
-    }
-  }
-}
-*/
 
 //new function to find global best particle
 void sensor_placement_node::getGlobalBest()
@@ -1812,7 +1785,7 @@ visualization_msgs::MarkerArray sensor_placement_node::getPolygonVecVisualizatio
   for (size_t j=0; j<polygons.size(); j++)
   {
     // setup standard stuff
-    line_strip.header.frame_id = "/map";
+    line_strip.header.frame_id = std::string("/map");
     line_strip.header.stamp = ros::Time();
     line_strip.ns = polygon_name + boost::lexical_cast<std::string>(j);;
     line_strip.action = visualization_msgs::Marker::ADD;
@@ -1849,7 +1822,7 @@ visualization_msgs::MarkerArray sensor_placement_node::getPolygonVecVisualizatio
 int main(int argc, char **argv)
 {
   // initialize ros and specify node name
-  ros::init(argc, argv, "sensor_placement_node");
+  ros::init(argc, argv, std::string("sensor_placement_node"));
 
   // create Node Class
   sensor_placement_node my_placement_node;

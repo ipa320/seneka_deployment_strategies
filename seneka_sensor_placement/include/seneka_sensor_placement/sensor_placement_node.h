@@ -120,7 +120,7 @@ private:
   std::vector<geometry_msgs::Point> PoI_vec_;
 
   // number of sensors
-  int sensor_num_;
+  unsigned int sensor_num_;
 
   // maximal range of sensors
   double sensor_range_;
