@@ -549,6 +549,8 @@ bool sensor_placement_node::getGSTargets()
   {
     //only if we received a map, we can get targets
     point_info dummy_point_info;
+    dummy_point_info.occupied = false;
+    dummy_point_info.covered = false;
     point_info_vec_.assign(map_.info.width * map_.info.height, dummy_point_info);
     //create dummy GS_point to save information in the pool
     GS_point dummy_GS_point;
