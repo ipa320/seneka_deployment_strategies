@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 2.8.3)
 project(seneka_strategies_config)
 
 # set build type
-set(CMAKE_BUILD_TYPE Release)
+if(NOT CMAKE_BUILD_TYPE)
+  message(STATUS "+++ setting CMAKE_BUILD_TYPE to Release +++")
+  set(CMAKE_BUILD_TYPE Release)  
+endif(NOT CMAKE_BUILD_TYPE)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
