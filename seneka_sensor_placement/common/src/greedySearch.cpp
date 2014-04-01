@@ -88,17 +88,17 @@ greedySearch::greedySearch(int num_of_sensors, int num_of_targets, FOV_2D_model 
 
 greedySearch::~greedySearch(){}
 
-// function to set action server; to make preemption possible
+// function to set action server
 void greedySearch::setActionServer(actionlib::SimpleActionServer<seneka_sensor_placement::sensorPlacementAction> * action_server)
 {
   // point to the given action server
   as_ = action_server;
 }
 
-// function to find maximum coverage position (using Greedy Search Algorithm) and place sensor at that position
+// function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
 bool greedySearch::newGreedyPlacement(size_t sensor_index)
 {
-  int num_of_slices;
+  unsigned int num_of_slices;
   int coverage;
   geometry_msgs::Pose new_pose;
   std::vector<double> orig_ang_r(2,0);
@@ -177,6 +177,7 @@ bool greedySearch::newGreedyPlacement(size_t sensor_index)
       sensors_.at(sensor_index).setSensorPose(new_pose);
       coverage = getCoverageRaytracing(sensor_index);         //get coverage at new_pose
       coverage_vec_.push_back(coverage);                      //save in coverage in coverage_vec_
+
       //check if preemption is requested
       if (as_->isPreemptRequested())
       {
@@ -272,8 +273,8 @@ int greedySearch::getCoverageRaytracing(size_t sensor_index)
     ray_end_point.y = 0;
 
     int x, y;
-    int cell;
-    int lookup_table_x, lookup_table_y;
+    unsigned int cell;
+    int lookup_table_x = 0, lookup_table_y = 0;
 
     //go through ray
     for(cell=0; cell < sensors_.at(sensor_index).getLookupTable()->at(ray).size(); cell++)
@@ -285,10 +286,11 @@ int greedySearch::getCoverageRaytracing(size_t sensor_index)
       x = worldToMapX(sensor_pose.position.x, *pMap_) + lookup_table_x;
       y = worldToMapY(sensor_pose.position.y, *pMap_) + lookup_table_y;
 
-      int cell_in_vector_coordinates = y * pMap_->info.width + x;
+      unsigned int cell_in_vector_coordinates = y * pMap_->info.width + x;
+
 
       //cell coordinates are valid (not outside of the area of interest)
-      if(((y >= 0) && (x >= 0) && (y < pMap_->info.height) && (x < pMap_->info.width)) && (cell_in_vector_coordinates < pPoint_info_vec_->size()))
+      if(((y >= 0) && (x >= 0) && (y < (int) pMap_->info.height) && (x < (int) pMap_->info.width)) && (cell_in_vector_coordinates < pPoint_info_vec_->size()))
       {
         //cell not on the perimeter
         if(pPoint_info_vec_->at(cell_in_vector_coordinates).potential_target != 0)
@@ -335,8 +337,8 @@ int greedySearch::getCoverageRaytracing(size_t sensor_index)
     //skipped some part of the ray -> get coordinates of the last non-occupied cell
     if((cell != sensors_.at(sensor_index).getLookupTable()->at(ray).size()-1) && (cell != 0))
     {
-      lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).x;
-      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).y;
+      lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell-1).x;
+      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell-1).y;
     }
 
     //absolute x and y map coordinates of the last non-occupied cell
@@ -383,12 +385,16 @@ int greedySearch::getCoverageRaytracing(size_t sensor_index)
     }
   }
   //all rays checked
+
   return coverage_by_new_orientation;
 }
 
 //function to update the covered info of the points (i.e. targets)
 void greedySearch::updateCoveredInfoRaytracing(size_t sensor_index)
 {
+  if(pPoint_info_vec_ == NULL)
+    return;
+
   //clear vector of ray end points
   sensors_.at(sensor_index).clearRayEndPoints();
 
@@ -433,8 +439,8 @@ void greedySearch::updateCoveredInfoRaytracing(size_t sensor_index)
     ray_end_point.y = 0;
 
     int x, y;
-    int cell;
-    int lookup_table_x, lookup_table_y;
+    unsigned int cell;
+    int lookup_table_x = 0, lookup_table_y = 0;
 
     //go through ray
     for(cell=0; cell < sensors_.at(sensor_index).getLookupTable()->at(ray).size(); cell++)
@@ -446,10 +452,10 @@ void greedySearch::updateCoveredInfoRaytracing(size_t sensor_index)
       x = worldToMapX(sensor_pose.position.x, *pMap_) + lookup_table_x;
       y = worldToMapY(sensor_pose.position.y, *pMap_) + lookup_table_y;
 
-      int cell_in_vector_coordinates = y * pMap_->info.width + x;
+      unsigned int cell_in_vector_coordinates = y * pMap_->info.width + x;
 
       //cell coordinates are valid (not outside of the area of interest)
-      if(((y >= 0) && (x >= 0) && (y < pMap_->info.height) && (x < pMap_->info.width)) && (cell_in_vector_coordinates < pPoint_info_vec_->size()))
+      if(((y >= 0) && (x >= 0) && (y < (int) pMap_->info.height) && (x < (int) pMap_->info.width)) && (cell_in_vector_coordinates < pPoint_info_vec_->size()))
       {
         //cell not on the perimeter
         if(pPoint_info_vec_->at(cell_in_vector_coordinates).potential_target != 0)
@@ -497,8 +503,8 @@ void greedySearch::updateCoveredInfoRaytracing(size_t sensor_index)
     //skipped some part of the ray -> get coordinates of the last non-occupied cell
     if((cell != sensors_.at(sensor_index).getLookupTable()->at(ray).size()-1) && (cell != 0))
     {
-      lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).x;
-      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).y;
+      lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell-1).x;
+      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell-1).y;
     }
 
     //absolute x and y map coordinates of the last non-occupied cell

@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 2.8.3)
 project(seneka_sensor_placement)
 
 # set build type
-# WARNING!
-# commenting it out, as it breaks the Greedy Search
-# This then somehow always returns coverage 0, if any other build type than Debug is specified
-#set(CMAKE_BUILD_TYPE Release)
+if(NOT CMAKE_BUILD_TYPE)
+  message(STATUS "+++ setting CMAKE_BUILD_TYPE to Release +++")
+  set(CMAKE_BUILD_TYPE Release)  
+endif(NOT CMAKE_BUILD_TYPE)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)

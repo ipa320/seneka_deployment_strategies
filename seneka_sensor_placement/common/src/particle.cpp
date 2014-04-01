@@ -868,8 +868,8 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
     ray_end_point.y = 0;
 
     int x, y;
-    int cell;
-    int lookup_table_x, lookup_table_y;
+    unsigned int cell;
+    int lookup_table_x = 0, lookup_table_y = 0;
 
     //go through ray
 
@@ -882,7 +882,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
       x = worldToMapX(sensor_pose.position.x, *pMap_) + lookup_table_x;
       y = worldToMapY(sensor_pose.position.y, *pMap_) + lookup_table_y;
 
-      int cell_in_vector_coordinates = y * pMap_->info.width + x;
+      unsigned int cell_in_vector_coordinates = y * pMap_->info.width + x;
 
       //cell coordinates are valid (not outside of the area of interest)
       if((y >= 0) && (x >= 0) && (y < pMap_->info.height) && (x < pMap_->info.width) && (cell_in_vector_coordinates < pTargets_with_info_fix_->size()))
@@ -956,8 +956,8 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
     //skipped some part of the ray -> get coordinates of the last non-occupied cell
     if((cell != sensors_.at(sensor_index).getLookupTable()->at(ray).size()-1) && (cell != 0))
     {
-      lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).x;
-      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).y;
+      lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell-1).x;
+      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell-1).y;
     }
 
     //absolute x and y map coordinates of the last non-occupied cell

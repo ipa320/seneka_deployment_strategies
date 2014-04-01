@@ -65,7 +65,7 @@
 // standard constructor for derived class
 FOV_2D_model::FOV_2D_model()
 {
-  setName("camera");
+  setName(std::string("camera"));
   setOpenAngles(0,0);
   setRange(0);
   setVelocity(0,0,0,0,0,0);
@@ -267,7 +267,7 @@ int FOV_2D_model::rayOfAngle(double angle)
   int best_ray = 0;
 
   //go through all rays
-  for(int ray=0; ray < pLookup_table_->size(); ray++)
+  for(unsigned int ray=0; ray < pLookup_table_->size(); ray++)
   {
     //angle of the current ray
     double ray_angle = atan2(pLookup_table_->at(ray).back().y, pLookup_table_->at(ray).back().x);
