@@ -173,6 +173,7 @@ bool greedySearch::newGreedyPlacement(size_t sensor_index)
     //check all orientations which are a multiple of new slice open angles
     for (double alpha=0; alpha<2*PI; alpha=alpha+gs_ang_r[0])
     {
+      //look around in all directions with resolution of the slice
       new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha);
       sensors_.at(sensor_index).setSensorPose(new_pose);
       coverage = getCoverageRaytracing(sensor_index);         //get coverage at new_pose
