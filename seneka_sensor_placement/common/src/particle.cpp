@@ -253,7 +253,7 @@ void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets
 void particle::resetTargetsWithInfoVar()
 {
   #pragma omp parallel for
-    for(int i=0; i<targets_with_info_var_.size(); i++)
+    for(unsigned int i=0; i<targets_with_info_var_.size(); i++)
     {
       if (targets_with_info_var_.at(i).no_reset==false)
         targets_with_info_var_.at(i).reset();

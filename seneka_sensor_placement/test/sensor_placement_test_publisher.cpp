@@ -319,7 +319,7 @@ public:
           polygon.points.push_back(pt);
 
           // remove that funny representation and push it in correct form
-          nh_.deleteParam(polygon_param_name);
+          pnh_.deleteParam(polygon_param_name);
           std::ostringstream oss;
           bool first = true;
 
@@ -337,8 +337,8 @@ public:
             }
           }
           oss << "]";
-          nh_.setParam(polygon_param_name, oss.str().c_str());
-          nh_.setParam(polygon_param, oss.str().c_str());
+          pnh_.setParam(polygon_param_name, oss.str().c_str());
+          pnh_.setParam(polygon_param, oss.str().c_str());
         }
       }
       // now also check the second condition
@@ -393,7 +393,7 @@ public:
         if (valid_polygon)
         {
           polygon = polygon_spec;
-          nh_.setParam(polygon_param_name, point_list_string);
+          pnh_.setParam(polygon_param_name, point_list_string);
         }
         else
         {

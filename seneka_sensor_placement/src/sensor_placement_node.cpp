@@ -198,13 +198,13 @@ void sensor_placement_node::getParams()
   {
     ROS_WARN("No parameter min_coverage_to_stop on parameter server. Using default [0.95]");
   }
-  pnh_.param(("min_coverage_to_stop"),min_cov_,0.95);
+  pnh_.param(std::string("min_coverage_to_stop"),min_cov_,0.95);
 
-  if(!pnh_.hasParam(("min_sensor_coverage_to_stop")))
+  if(!pnh_.hasParam(std::string("min_sensor_coverage_to_stop")))
   {
     ROS_WARN("No parameter min_sensor_coverage_to_stop on parameter server. Using default [0.08]");
   }
-  pnh_.param(("min_sensor_coverage_to_stop"),min_sensor_cov_, 0.08);
+  pnh_.param(std::string("min_sensor_coverage_to_stop"),min_sensor_cov_, 0.08);
 
   // get PSO configuration parameters
   if(!pnh_.hasParam(std::string("c1")))
