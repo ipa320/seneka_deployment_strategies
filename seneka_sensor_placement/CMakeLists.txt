@@ -24,6 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   actionlib
   actionlib_msgs
+  dynamic_reconfigure
 )
 
 find_package(Boost REQUIRED COMPONENTS system)
@@ -51,6 +52,10 @@ generate_messages(
   DEPENDENCIES
     std_msgs
     actionlib_msgs
+)
+
+generate_dynamic_reconfigure_options(
+  cfg/${PROJECT_NAME}.cfg
 )
 
 catkin_package(
@@ -99,6 +104,7 @@ add_executable(sensor_placement_test	test/sensor_placement_test_publisher.cpp)
 add_executable(sensor_placement_interface src/sensor_placement_interface.cpp)
 
 add_dependencies(sensor_placement_node  ${PROJECT_NAME}_gencpp)
+add_dependencies(sensor_placement_node  ${PROJECT_NAME}_gencfg)
 add_dependencies(sensor_placement_interface  ${PROJECT_NAME}_gencpp)
 
 ## Specify libraries to link a library or executable target against
