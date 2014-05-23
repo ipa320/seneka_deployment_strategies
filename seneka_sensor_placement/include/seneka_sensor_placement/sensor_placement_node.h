@@ -74,6 +74,8 @@
 #include <std_srvs/Empty.h>
 #include <nav_msgs/GetMap.h>
 #include <actionlib/server/simple_action_server.h>
+#include <seneka_sensor_placement/seneka_sensor_placementConfig.h>
+#include <dynamic_reconfigure/server.h>
 
 // external includes
 #include <sensor_model.h>
@@ -241,12 +243,22 @@ public:
   // declaration of ros service clients
   ros::ServiceClient sc_get_map_;
 
+  // dynamic reconfigure stuff
+  dynamic_reconfigure::Server<seneka_sensor_placement::seneka_sensor_placementConfig> dyn_reconf_server;
+  dynamic_reconfigure::Server<seneka_sensor_placement::seneka_sensor_placementConfig>::CallbackType dyn_reconf_callback;
+
   /* ----------------------------------- */
   /* ----------- functions ------------- */
   /* ----------------------------------- */
 
   // function to get the ROS parameters from yaml-file
   void getParams();
+
+  // function to get the ROS parameters from dynamic reconfigure
+  void configureCallback(seneka_sensor_placement::seneka_sensor_placementConfig &config, uint32_t level);
+  
+  // function to update dynamic reconfigure server after parameter changes i.e. via ROS-Services 
+  //void updateConfigServer();
 
   // function to get an array of targets from the map and the area of interest specified as polygon
   bool getTargets();

@@ -98,6 +98,10 @@ sensor_placement_node::sensor_placement_node()
   // get parameters from parameter server if possible
   getParams();
 
+  // set dynamic reconfigure server
+  dyn_reconf_callback = boost::bind(&sensor_placement_node::configureCallback, this, _1, _2);
+  dyn_reconf_server.setCallback(dyn_reconf_callback);
+
   // initialize best coverage
   best_cov_ = 0;
 
@@ -249,6 +253,33 @@ void sensor_placement_node::getParams()
     ROS_WARN("No parameter GS_target_offset on parameter server. Using default [5.0 in m]");
   }
   pnh_.param(std::string("GS_target_offset"),GS_target_offset_, 5.0);
+}
+
+// function to get the ROS parameters from dynamic reconfigure
+void sensor_placement_node::configureCallback(seneka_sensor_placement::seneka_sensor_placementConfig &config, uint32_t level) 
+{
+  if (as_.isActive())
+    ROS_WARN("Cannot set new parameters while optimization is running!");
+  else
+  {
+    sensor_num_ = config.number_of_sensors;
+    sensor_range_ = config.max_sensor_range;
+    open_angles_.at(0) = config.open_angle_1;
+    open_angles_.at(1) = config.open_angle_2;
+    max_lin_vel_ = config.max_linear_sensor_velocity;
+    max_ang_vel_ = config.max_angular_sensor_velocity;
+    particle_num_ = config.number_of_particles;
+    iter_max_ = config.max_num_iterations;
+    min_cov_ = config.min_coverage_to_stop;
+    PSO_param_1_ = config.c1;
+    PSO_param_2_ = config.c2;
+    PSO_param_3_ = config.c3;
+    iter_max_per_sensor_ = config.max_num_iterations_per_sensor;
+    min_sensor_cov_ = config.min_coverage_to_stop_per_sensor;
+    slice_open_angles_.at(0) = config.slice_open_angle_1;
+    slice_open_angles_.at(1) = config.slice_open_angle_2;
+    GS_target_offset_ = config.GS_target_offset;
+  }
 }
 
 
