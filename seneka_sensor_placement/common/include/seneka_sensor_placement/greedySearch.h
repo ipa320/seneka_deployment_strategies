@@ -60,14 +60,16 @@
 #include <ros/ros.h>
 #include <tf/tf.h>
 #include <ros/console.h>
+#include <actionlib/server/simple_action_server.h>
+
+// ros msg/srv includes
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <actionlib/server/simple_action_server.h>
-
-// external includes
+ 
+// internal includes
 #include <sensor_model.h>
 #include <seneka_utilities.h>
 #include <seneka_sensor_placement/sensorPlacementAction.h>

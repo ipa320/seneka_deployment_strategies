@@ -62,29 +62,31 @@
 #include <ros/ros.h>
 #include <tf/tf.h>
 #include <ros/console.h>
-#include <geometry_msgs/Polygon.h>
-#include <geometry_msgs/PolygonStamped.h>
-#include <geometry_msgs/Point32.h>
-#include <geometry_msgs/Pose2D.h>
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <nav_msgs/Path.h>
-#include <std_msgs/String.h>
-#include <std_srvs/Empty.h>
-#include <nav_msgs/GetMap.h>
 #include <actionlib/server/simple_action_server.h>
-#include <seneka_sensor_placement/seneka_sensor_placementConfig.h>
 #include <dynamic_reconfigure/server.h>
 
-// external includes
+// ros msg/srv include
+#include <geometry_msgs/Point32.h>
+#include <geometry_msgs/Polygon.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include <geometry_msgs/Pose2D.h>
+#include <nav_msgs/GetMap.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Path.h>
+#include <seneka_sensor_placement/polygon_offset.h>
+#include <seneka_sensor_placement/seneka_sensor_placementConfig.h>
+#include <seneka_sensor_placement/sensorPlacementAction.h>
+#include <std_srvs/Empty.h>
+#include <std_msgs/String.h>
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
+
+// internal includes
 #include <sensor_model.h>
 #include <particle.h>
 #include <seneka_utilities.h>
 #include <greedySearch.h>
 #include <clipper.hpp>
-#include <seneka_sensor_placement/polygon_offset.h>
-#include <seneka_sensor_placement/sensorPlacementAction.h>
 
 using namespace std;
 using namespace seneka_utilities;
@@ -257,9 +259,6 @@ public:
   // function to get the ROS parameters from dynamic reconfigure
   void configureCallback(seneka_sensor_placement::seneka_sensor_placementConfig &config, uint32_t level);
   
-  // function to update dynamic reconfigure server after parameter changes i.e. via ROS-Services 
-  //void updateConfigServer();
-
   // function to get an array of targets from the map and the area of interest specified as polygon
   bool getTargets();
 
