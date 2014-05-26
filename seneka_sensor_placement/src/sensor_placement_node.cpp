@@ -329,14 +329,14 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
 
     case 2:
     {
-      ROS_INFO("Starting 'GreeyPSO' action");
+      ROS_INFO("Starting 'GreedyPSO' action");
       startGreedyPSOCallback();
       break;
     }
 
     case 3:
     {
-      ROS_INFO("Starting 'GreadySearch' action");
+      ROS_INFO("Starting 'GreedySearch' action");
       startGSCallback();
       break;
     }
@@ -1298,7 +1298,8 @@ void sensor_placement_node::GreedyPSOptimize()
     global_best_.updateTargetsInfoRaytracing(0, true);
     //calculate and print total coverage by GreedyPSO
     total_GreedyPSO_covered_targets_num_ = total_GreedyPSO_covered_targets_num_+ global_best_.getNumOfTargetsCovered();
-    ROS_INFO_STREAM("Total coverage by GreedyPSO: " << (double) total_GreedyPSO_covered_targets_num_/target_num_);
+    best_cov_ = (double) total_GreedyPSO_covered_targets_num_/target_num_;
+    ROS_INFO_STREAM("Total coverage by GreedyPSO: " << best_cov_);
     //set updated targets for whole particle swarm i.e. make the state of targets_with_info_var
     //TODO: use a pointer for targetsWithInfo instead of each particle having their own targetsWithInfo object
     for(size_t i = 0; i < particle_swarm_.size(); i++)
