@@ -56,19 +56,45 @@
 import roslib
 import rospy
 
+import actionlib
 import dynamic_reconfigure.client
+
+import datetime
 
 from std_srvs.srv import Empty
 from seneka_sensor_placement.srv import polygon_offset
-        
+import seneka_sensor_placement.msg
+
+# lists specifying the different parameters, over which to iterate
+global gs_resolution, greedyPSO_particles, number_of_sensors
+gs_resolution = [10.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.75, 0.5, 0.25, 0.1]
+greedyPSO_particles = [100, 40, 30, 20, 10]
+number_of_sensors = [5, 7]
+
+# IDs for action calls
+global algo
+algo = {"PSO": 1, "GreedyPSO": 2, "GreedySearch": 3, "GreedySearchOffset": 4}
+
+
 def update_config(client, cfg_update):
+    rospy.sleep(2.5) # sleep some time to wait for action server
     old_cfg = dyn_reconf_client.get_configuration(5.0)
     dyn_reconf_client.update_configuration(cfg_update)
     new_cfg = dyn_reconf_client.get_configuration(5.0)
-    rospy.sleep(0.5)
+    rospy.sleep(2.5)
     return old_cfg, new_cfg
 
-
+def call_action(client, goal):
+    rospy.sleep(2.5)
+    start_time = rospy.Time().now()
+    client.wait_for_server()
+    client.send_goal(goal)
+    client.wait_for_result()
+    result = client.get_result()
+    end_time = rospy.Time().now()
+    delta_t = (end_time - start_time).to_sec()
+    rospy.sleep(2.5)
+    return delta_t, result
 
 if __name__ == '__main__':
     # init node
@@ -81,27 +107,13 @@ if __name__ == '__main__':
     sensor_placement_config = dyn_reconf_client.get_configuration(5.0)
     rospy.loginfo("Dynamic reconfigure Client set up!")
 
-    # setup services
-    rospy.wait_for_service('StartPSO')
-    PSO_sc = rospy.ServiceProxy('StartPSO', Empty)
-    rospy.loginfo("PSO Service connected!")
+    # setup action client
+    client = actionlib.SimpleActionClient('sensorPlacementActionServer',seneka_sensor_placement.msg.sensorPlacementAction)
+    # setup dummy goal
+    goal = seneka_sensor_placement.msg.sensorPlacementGoal()
 
-    rospy.wait_for_service('StartGS')
-    GS_sc = rospy.ServiceProxy('StartGS', Empty)
-    rospy.loginfo("GS Service connected!")
 
-    rospy.wait_for_service('StartGS_with_offset_polygon')
-    GS_offset_sc = rospy.ServiceProxy('StartGS_with_offset_polygon', polygon_offset)
-    rospy.loginfo("GS offset Service connected!")
-
-    rospy.wait_for_service('StartGreedyPSO')
-    GreedyPSO_sc = rospy.ServiceProxy('StartGreedyPSO', Empty)
-    rospy.loginfo("GreedyPSO Service connected!")
-
-    rospy.wait_for_service('CancelAction')
-    Cancel_sc = rospy.ServiceProxy('CancelAction', Empty)
-    rospy.loginfo("CancelAction Service connected!")
-
+    # setup services for publishing different stuff
     rospy.wait_for_service('publish_AoI')
     pub_AoI_sc = rospy.ServiceProxy('publish_AoI', Empty)
     rospy.loginfo("publish_AoI Service connected!")
@@ -118,25 +130,40 @@ if __name__ == '__main__':
     pub_forbidden_area_sc = rospy.ServiceProxy('publish_forbidden_areas', Empty)
     rospy.loginfo("publish_forbidden_areas Service connected!")
 
-    # call services and run tests
+
+    ##
+    ## run tests
+    ##
+    now = datetime.datetime.now()
+    string_to_file = "Results of test run at "+str(now)+"\n===================\n\n"
+    f.write(string_to_file)
+
+    ## setup goal
     rospy.loginfo("Creating Area of interest")
     pub_AoI_sc()
-    rospy.loginfo("Calling PSO with default config")
-    PSO_sc()
-    rospy.sleep(20.0)
-    rospy.loginfo("Canceling Action")
-    Cancel_sc()
 
-    rospy.sleep(5.0)
-    rospy.loginfo("Set new configuration")
-    update = {"number_of_sensors": "7"}
+    update = {"max_num_iterations": str(10)}
     old_cfg, new_cfg = update_config(dyn_reconf_client, update)
-    print old_cfg
-    print ""
-    print new_cfg
 
-    rospy.loginfo("Calling PSO with default config")
-    PSO_sc()
-    rospy.sleep(20.0)
-    rospy.loginfo("Canceling Action")
-    Cancel_sc()
+    # open file
+    with open('testoutput.txt','w') as f:
+        for num in number_of_sensors:
+            rospy.loginfo("Set new configuration")
+            update = {"number_of_sensors": str(num)}
+            old_cfg, new_cfg = update_config(dyn_reconf_client, update)
+
+            # call action
+            goal.service_id = algo["PSO"]
+            delta_t, result = call_action(client,goal)
+
+            for key, service_id in algo.iteritems():
+                if service_id == goal.service_id:
+                    string_to_file = "Called Action with Algo "+str(key)+"\n"
+            f.write(string_to_file)
+            string_to_file = "Updated configuration is "+str(update)+"\n"
+            f.write(string_to_file)
+            string_to_file = "Returned with coverage "+str(result)+" in "+str(delta_t)+" seconds"+"\n=================\n"
+            f.write(string_to_file)
+
+
+    
