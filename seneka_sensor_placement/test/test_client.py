@@ -101,18 +101,26 @@ def call_action(client, goal):
     rospy.sleep(2.5)
     return delta_t, result
 
-def result_to_file(f, algo_id, config, update, result, delta_t, service_input_arg=None):
+def result_to_file(f, algo_id, update, result, delta_t, service_input_arg=None):
     for key, service_id in algo.iteritems():
         if service_id == algo_id:
             string_to_file = "Called Action with Algo "+str(key)+"\n"
             f.write(string_to_file)
     if not service_input_arg == None:
-        string_to_file = "Set service_input_arg to "+str(service_input_arg)
+        string_to_file = "Set service_input_arg to "+str(service_input_arg)+"\n"
         f.write(string_to_file)
     string_to_file = "Updated configuration is "+str(update)+"\n"
     f.write(string_to_file)
-    string_to_file = "Returned with result "+str(result)+" in "+str(delta_t)+" seconds"+"\n=================\n\n"
+    string_to_file = "Returned with result "+str(result)+" in "+str(delta_t)+" seconds"+"\n"
     f.write(string_to_file)
+    #shortform
+    string_to_file = "short: "+str(algo_id)+" "+str(result)+" "+str(delta_t)
+    for key, value in update.iteritems():
+        string_to_file += " "+str(key)+": "+str(value)
+    if not service_input_arg == None:
+        string_to_file += " "+str(service_input_arg)
+    f.write(string_to_file)
+    f.write("\n=================\n\n")
 
 
 if __name__ == '__main__':
@@ -154,18 +162,22 @@ if __name__ == '__main__':
     ## run tests
     ##
 
-    ## setup goal
+    ## setup AoI and forbidden Area
     rospy.loginfo("Creating Area of interest")
     pub_AoI_sc()
+    rospy.loginfo("Setup forbidden area")
+    pub_forbidden_area_sc()
 
     # open file
     now = datetime.datetime.now()
     with open('result_'+now.strftime('%y%m%d')+'_'+now.strftime('%H%M%S')+'.txt','w') as f:
         string_to_file = "Results of test run at "+str(now)+"\n===================\n\n"
         f.write(string_to_file)
-        f.write("Notes: \nThe config from the yaml file is always restored before updating the configuration.")
-        f.write("This should help to see the differences from the start configuration. The start config is\n")
-        f.write(str(start_config))
+        f.write("Notes: \nThe config from the yaml file is always restored before updating the configuration.\n")
+        f.write("This should help to see the differences from the start configuration. The start config is:\n")
+        for key, value in start_config.iteritems():
+            if not key == "groups":
+                f.write(str(key)+": "+str(value)+"\n")
         f.write("\n\n\n\n")
 
         counter = 0
@@ -181,7 +193,7 @@ if __name__ == '__main__':
             goal.service_id = algo["PSO"]
             delta_t, result = call_action(client,goal)
 
-            result_to_file(f, new_cfg, goal.service_id, update, result, delta_t)
+            result_to_file(f, goal.service_id, update, result, delta_t)
 
 
         counter = 0
@@ -198,7 +210,7 @@ if __name__ == '__main__':
                 goal.service_id = algo["GreedyPSO"]
                 delta_t, result = call_action(client,goal)
 
-                result_to_file(f, new_cfg, goal.service_id, update, result, delta_t)
+                result_to_file(f, goal.service_id, update, result, delta_t)
 
         counter = 0
         # Greedy with different number of sensors and different rasterization
@@ -215,10 +227,11 @@ if __name__ == '__main__':
                 # set offset
                 goal.service_input_arg = offset
                 delta_t, result = call_action(client,goal)
+                
+                result_to_file(f, goal.service_id, update, result, delta_t, service_input_arg=goal.service_input_arg)
                 # to be sure, reset offset
                 goal.service_input_arg = 0.0
                 
-                result_to_file(f, new_cfg, goal.service_id, update, result, delta_t)
 
         # Finished
         now = datetime.datetime.now()
