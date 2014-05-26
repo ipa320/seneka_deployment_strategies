@@ -67,13 +67,10 @@ import seneka_sensor_placement.msg
 
 # lists specifying the different parameters, over which to iterate
 global gs_resolution, greedyPSO_particles, number_of_sensors
-# gs_resolution = [10.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.75, 0.5, 0.25, 0.1]
-# greedyPSO_particles = [100, 40, 30, 20, 10]
-# number_of_sensors = [1, 2, 3, 4, 5, 6, 7]
+gs_resolution = [10.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.75, 0.5, 0.25, 0.1]
+greedyPSO_particles = [100, 40, 30, 20, 10]
+number_of_sensors = [1, 2, 3, 4, 5, 6, 7]
 
-gs_resolution = [5.0]
-greedyPSO_particles = [20]
-number_of_sensors = [5]
 
 
 # IDs for action calls
