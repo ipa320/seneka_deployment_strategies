@@ -67,9 +67,14 @@ import seneka_sensor_placement.msg
 
 # lists specifying the different parameters, over which to iterate
 global gs_resolution, greedyPSO_particles, number_of_sensors
-gs_resolution = [10.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.75, 0.5, 0.25, 0.1]
-greedyPSO_particles = [100, 40, 30, 20, 10]
-number_of_sensors = [5, 7]
+# gs_resolution = [10.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.75, 0.5, 0.25, 0.1]
+# greedyPSO_particles = [100, 40, 30, 20, 10]
+# number_of_sensors = [1, 2, 3, 4, 5, 6, 7]
+
+gs_resolution = [5.0]
+greedyPSO_particles = [20]
+number_of_sensors = [5]
+
 
 # IDs for action calls
 global algo
@@ -96,6 +101,20 @@ def call_action(client, goal):
     rospy.sleep(2.5)
     return delta_t, result
 
+def result_to_file(f, algo_id, config, update, result, delta_t, service_input_arg=None):
+    for key, service_id in algo.iteritems():
+        if service_id == algo_id:
+            string_to_file = "Called Action with Algo "+str(key)+"\n"
+            f.write(string_to_file)
+    if not service_input_arg == None:
+        string_to_file = "Set service_input_arg to "+str(service_input_arg)
+        f.write(string_to_file)
+    string_to_file = "Updated configuration is "+str(update)+"\n"
+    f.write(string_to_file)
+    string_to_file = "Returned with result "+str(result)+" in "+str(delta_t)+" seconds"+"\n=================\n\n"
+    f.write(string_to_file)
+
+
 if __name__ == '__main__':
     # init node
     rospy.init_node("sensor_placement_test_node")
@@ -104,7 +123,7 @@ if __name__ == '__main__':
     # setup client
     dyn_reconf_client = dynamic_reconfigure.client.Client("/sensor_placement")
     # get current config
-    sensor_placement_config = dyn_reconf_client.get_configuration(5.0)
+    start_config = dyn_reconf_client.get_configuration(5.0)
     rospy.loginfo("Dynamic reconfigure Client set up!")
 
     # setup action client
@@ -134,21 +153,27 @@ if __name__ == '__main__':
     ##
     ## run tests
     ##
-    now = datetime.datetime.now()
-    string_to_file = "Results of test run at "+str(now)+"\n===================\n\n"
-    f.write(string_to_file)
 
     ## setup goal
     rospy.loginfo("Creating Area of interest")
     pub_AoI_sc()
 
-    update = {"max_num_iterations": str(10)}
-    old_cfg, new_cfg = update_config(dyn_reconf_client, update)
-
     # open file
-    with open('testoutput.txt','w') as f:
+    now = datetime.datetime.now()
+    with open('result_'+now.strftime('%y%m%d')+'_'+now.strftime('%H%M%S')+'.txt','w') as f:
+        string_to_file = "Results of test run at "+str(now)+"\n===================\n\n"
+        f.write(string_to_file)
+        f.write("Notes: \nThe config from the yaml file is always restored before updating the configuration.")
+        f.write("This should help to see the differences from the start configuration. The start config is\n")
+        f.write(str(start_config))
+        f.write("\n\n\n\n")
+
+        counter = 0
+        # PSO with different number of sensors
         for num in number_of_sensors:
-            rospy.loginfo("Set new configuration")
+            counter += 1
+            rospy.loginfo("Start PSO test num %d of %d", counter, len(number_of_sensors))
+            update_config(dyn_reconf_client, start_config)
             update = {"number_of_sensors": str(num)}
             old_cfg, new_cfg = update_config(dyn_reconf_client, update)
 
@@ -156,14 +181,46 @@ if __name__ == '__main__':
             goal.service_id = algo["PSO"]
             delta_t, result = call_action(client,goal)
 
-            for key, service_id in algo.iteritems():
-                if service_id == goal.service_id:
-                    string_to_file = "Called Action with Algo "+str(key)+"\n"
-            f.write(string_to_file)
-            string_to_file = "Updated configuration is "+str(update)+"\n"
-            f.write(string_to_file)
-            string_to_file = "Returned with coverage "+str(result)+" in "+str(delta_t)+" seconds"+"\n=================\n"
-            f.write(string_to_file)
+            result_to_file(f, new_cfg, goal.service_id, update, result, delta_t)
 
 
-    
+        counter = 0
+        # GreedyPSO with different number of sensors and particles
+        for num in number_of_sensors:
+            for particles in greedyPSO_particles:
+                counter += 1
+                rospy.loginfo("Start GreedyPSO test num %d of %d", counter, len(number_of_sensors)*len(greedyPSO_particles))
+                update_config(dyn_reconf_client, start_config)
+                update = {"number_of_sensors": str(num), "number_of_particles": str(particles)}
+                old_cfg, new_cfg = update_config(dyn_reconf_client, update)
+
+                # call action
+                goal.service_id = algo["GreedyPSO"]
+                delta_t, result = call_action(client,goal)
+
+                result_to_file(f, new_cfg, goal.service_id, update, result, delta_t)
+
+        counter = 0
+        # Greedy with different number of sensors and different rasterization
+        for num in number_of_sensors:
+            for offset in gs_resolution:
+                counter += 1
+                rospy.loginfo("Start Greedy test num %d of %d", counter, len(number_of_sensors)*len(gs_resolution))
+                update_config(dyn_reconf_client, start_config)
+                update = {"number_of_sensors": str(num)}
+                old_cfg, new_cfg = update_config(dyn_reconf_client, update)
+
+                # call action
+                goal.service_id = algo["GreedySearch"]
+                # set offset
+                goal.service_input_arg = offset
+                delta_t, result = call_action(client,goal)
+                # to be sure, reset offset
+                goal.service_input_arg = 0.0
+                
+                result_to_file(f, new_cfg, goal.service_id, update, result, delta_t)
+
+        # Finished
+        now = datetime.datetime.now()
+        string_to_file = "\n\n===================\nFinished test runs at "+str(now)
+        f.write(string_to_file)
