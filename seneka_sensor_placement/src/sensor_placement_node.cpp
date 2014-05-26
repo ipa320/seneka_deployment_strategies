@@ -375,9 +375,11 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
 
   if(action_success_)
   {
-    ROS_INFO("Action Succeeded");
+    seneka_sensor_placement::sensorPlacementResult result;
+    result.coverage = best_cov_;
+    ROS_INFO("Action Succeeded with coverage of %f", best_cov_);
     // set the action state to succeeded
-    as_.setSucceeded();
+    as_.setSucceeded(result);
   }
   else
     ROS_INFO("Action was not completed");
@@ -1310,6 +1312,7 @@ void sensor_placement_node::GreedyPSOptimize()
 void sensor_placement_node::runGS()
 {
   //initialization
+  best_cov_ = 0.0;
   double GS_coverage;
   ros::Time start_time;
   ros::Duration end_time;
@@ -1340,7 +1343,7 @@ void sensor_placement_node::runGS()
     ROS_INFO_STREAM("Sensors placed: " << sensor_index+1 << " coverage: " << GS_coverage);
     ROS_INFO_STREAM("Time taken: " << end_time << "[s]");
   }
-
+  best_cov_ = GS_coverage;
 }
 
 //new function to find global best particle
@@ -1440,6 +1443,7 @@ void sensor_placement_node::initializeCallback()
 // callback function for the start PSO service
 bool sensor_placement_node::startPSOCallback()
 {
+  best_cov_ = 0.0;
   //start map service and create look up tables
   initializeCallback();
 
@@ -1481,7 +1485,6 @@ bool sensor_placement_node::startPSOCallback()
   targets_with_info_var_.clear();
 
   target_num_ = 0;
-  best_cov_ = 0;
   best_particle_index_ = 0;
   best_priority_sum_ = 0;
 
@@ -1494,6 +1497,7 @@ bool sensor_placement_node::startPSOCallback()
 // callback function for the start GreedyPSO service
 bool sensor_placement_node::startGreedyPSOCallback()
 {
+  best_cov_ = 0.0;
   //start map service and create look up tables
   initializeCallback();
 
@@ -1538,7 +1542,7 @@ bool sensor_placement_node::startGreedyPSOCallback()
   targets_with_info_var_.clear();
 
   target_num_ = 0;
-  best_cov_ = 0;
+
   best_particle_index_ = 0;
   best_priority_sum_ = 0;
 
