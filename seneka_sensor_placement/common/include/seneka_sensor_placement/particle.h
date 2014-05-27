@@ -61,20 +61,22 @@
 #include <ros/ros.h>
 #include <tf/tf.h>
 #include <ros/console.h>
+
+// ros msg/srv includes
+#include <geometry_msgs/Point.h>
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/PolygonStamped.h>
-#include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose2D.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Vector3.h>
-#include <geometry_msgs/Point.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h>
 #include <std_msgs/String.h>
 #include <visualization_msgs/MarkerArray.h>
 
-// external includes
+// internal includes
 #include <sensor_model.h>
 #include <seneka_utilities.h>
 

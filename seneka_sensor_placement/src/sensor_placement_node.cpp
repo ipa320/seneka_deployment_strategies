@@ -98,6 +98,10 @@ sensor_placement_node::sensor_placement_node()
   // get parameters from parameter server if possible
   getParams();
 
+  // set dynamic reconfigure server
+  dyn_reconf_callback = boost::bind(&sensor_placement_node::configureCallback, this, _1, _2);
+  dyn_reconf_server.setCallback(dyn_reconf_callback);
+
   // initialize best coverage
   best_cov_ = 0;
 
@@ -251,6 +255,33 @@ void sensor_placement_node::getParams()
   pnh_.param(std::string("GS_target_offset"),GS_target_offset_, 5.0);
 }
 
+// function to get the ROS parameters from dynamic reconfigure
+void sensor_placement_node::configureCallback(seneka_sensor_placement::seneka_sensor_placementConfig &config, uint32_t level) 
+{
+  if (as_.isActive())
+    ROS_WARN("Cannot set new parameters while optimization is running!");
+  else
+  {
+    sensor_num_ = config.number_of_sensors;
+    sensor_range_ = config.max_sensor_range;
+    open_angles_.at(0) = config.open_angle_1;
+    open_angles_.at(1) = config.open_angle_2;
+    max_lin_vel_ = config.max_linear_sensor_velocity;
+    max_ang_vel_ = config.max_angular_sensor_velocity;
+    particle_num_ = config.number_of_particles;
+    iter_max_ = config.max_num_iterations;
+    min_cov_ = config.min_coverage_to_stop;
+    PSO_param_1_ = config.c1;
+    PSO_param_2_ = config.c2;
+    PSO_param_3_ = config.c3;
+    iter_max_per_sensor_ = config.max_num_iterations_per_sensor;
+    min_sensor_cov_ = config.min_coverage_to_stop_per_sensor;
+    slice_open_angles_.at(0) = config.slice_open_angle_1;
+    slice_open_angles_.at(1) = config.slice_open_angle_2;
+    GS_target_offset_ = config.GS_target_offset;
+  }
+}
+
 
 // function to cancel the goal if requested by action client (sensor_placement_interface) and returns true if preepmtion is requested
 bool sensor_placement_node::preemptRequested()
@@ -298,14 +329,14 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
 
     case 2:
     {
-      ROS_INFO("Starting 'GreeyPSO' action");
+      ROS_INFO("Starting 'GreedyPSO' action");
       startGreedyPSOCallback();
       break;
     }
 
     case 3:
     {
-      ROS_INFO("Starting 'GreadySearch' action");
+      ROS_INFO("Starting 'GreedySearch' action");
       startGSCallback();
       break;
     }
@@ -344,9 +375,11 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
 
   if(action_success_)
   {
-    ROS_INFO("Action Succeeded");
+    seneka_sensor_placement::sensorPlacementResult result;
+    result.coverage = best_cov_;
+    ROS_INFO("Action Succeeded with coverage of %f", best_cov_);
     // set the action state to succeeded
-    as_.setSucceeded();
+    as_.setSucceeded(result);
   }
   else
     ROS_INFO("Action was not completed");
@@ -1265,7 +1298,8 @@ void sensor_placement_node::GreedyPSOptimize()
     global_best_.updateTargetsInfoRaytracing(0, true);
     //calculate and print total coverage by GreedyPSO
     total_GreedyPSO_covered_targets_num_ = total_GreedyPSO_covered_targets_num_+ global_best_.getNumOfTargetsCovered();
-    ROS_INFO_STREAM("Total coverage by GreedyPSO: " << (double) total_GreedyPSO_covered_targets_num_/target_num_);
+    best_cov_ = (double) total_GreedyPSO_covered_targets_num_/target_num_;
+    ROS_INFO_STREAM("Total coverage by GreedyPSO: " << best_cov_);
     //set updated targets for whole particle swarm i.e. make the state of targets_with_info_var
     //TODO: use a pointer for targetsWithInfo instead of each particle having their own targetsWithInfo object
     for(size_t i = 0; i < particle_swarm_.size(); i++)
@@ -1279,6 +1313,7 @@ void sensor_placement_node::GreedyPSOptimize()
 void sensor_placement_node::runGS()
 {
   //initialization
+  best_cov_ = 0.0;
   double GS_coverage;
   ros::Time start_time;
   ros::Duration end_time;
@@ -1309,7 +1344,7 @@ void sensor_placement_node::runGS()
     ROS_INFO_STREAM("Sensors placed: " << sensor_index+1 << " coverage: " << GS_coverage);
     ROS_INFO_STREAM("Time taken: " << end_time << "[s]");
   }
-
+  best_cov_ = GS_coverage;
 }
 
 //new function to find global best particle
@@ -1409,6 +1444,7 @@ void sensor_placement_node::initializeCallback()
 // callback function for the start PSO service
 bool sensor_placement_node::startPSOCallback()
 {
+  best_cov_ = 0.0;
   //start map service and create look up tables
   initializeCallback();
 
@@ -1450,7 +1486,6 @@ bool sensor_placement_node::startPSOCallback()
   targets_with_info_var_.clear();
 
   target_num_ = 0;
-  best_cov_ = 0;
   best_particle_index_ = 0;
   best_priority_sum_ = 0;
 
@@ -1463,6 +1498,7 @@ bool sensor_placement_node::startPSOCallback()
 // callback function for the start GreedyPSO service
 bool sensor_placement_node::startGreedyPSOCallback()
 {
+  best_cov_ = 0.0;
   //start map service and create look up tables
   initializeCallback();
 
@@ -1507,7 +1543,7 @@ bool sensor_placement_node::startGreedyPSOCallback()
   targets_with_info_var_.clear();
 
   target_num_ = 0;
-  best_cov_ = 0;
+
   best_particle_index_ = 0;
   best_priority_sum_ = 0;
 

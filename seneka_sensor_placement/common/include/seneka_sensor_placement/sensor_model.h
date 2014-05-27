@@ -60,15 +60,18 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <tf/tf.h>
+
+// ros msg/srv includes
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/Pose2D.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Quaternion.h>
 #include <geometry_msgs/Twist.h>
+#include <std_msgs/String.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <std_msgs/String.h>
+
 
 // includes
 #include <seneka_utilities.h>
