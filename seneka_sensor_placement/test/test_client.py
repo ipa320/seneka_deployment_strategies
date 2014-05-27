@@ -66,16 +66,15 @@ from seneka_sensor_placement.srv import polygon_offset
 import seneka_sensor_placement.msg
 
 # lists specifying the different parameters, over which to iterate
-global gs_resolution, greedyPSO_particles, number_of_sensors
+global gs_resolution, greedyPSO_particles, number_of_sensors, perimeter_offsets
 gs_resolution = [10.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.75, 0.5, 0.25, 0.1]
 greedyPSO_particles = [100, 40, 30, 20, 10]
 number_of_sensors = [1, 2, 3, 4, 5, 6, 7]
-
-
+perimeter_offsets = [10.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.75, 0.5, 0.25, 0.1]
 
 # IDs for action calls
 global algo
-algo = {"PSO": 1, "GreedyPSO": 2, "GreedySearch": 3, "GreedySearchOffset": 4}
+algo = {"PSO": 1, "GreedyPSO": 2, "GreedySearch": 3, "GreedySearchPerimeter": 4}
 
 
 def update_config(client, cfg_update):
@@ -117,7 +116,7 @@ def result_to_file(f, algo_id, update, result, delta_t, service_input_arg=None):
     if not service_input_arg == None:
         string_to_file += " "+str(service_input_arg)
     f.write(string_to_file)
-    f.write("\n=================\n\n")
+    f.write("\n===================\n\n")
 
 
 if __name__ == '__main__':
@@ -191,7 +190,7 @@ if __name__ == '__main__':
             delta_t, result = call_action(client,goal)
 
             result_to_file(f, goal.service_id, update, result, delta_t)
-
+        f.write("===================\n\n\n")
 
         counter = 0
         # GreedyPSO with different number of sensors and particles
@@ -208,26 +207,46 @@ if __name__ == '__main__':
                 delta_t, result = call_action(client,goal)
 
                 result_to_file(f, goal.service_id, update, result, delta_t)
+        f.write("===================\n\n\n")
 
         counter = 0
-        # Greedy with different number of sensors and different rasterization
+        # Greedy with different number of sensors and different spacing of grid
         for num in number_of_sensors:
-            for offset in gs_resolution:
+            for spacing in gs_resolution:
                 counter += 1
                 rospy.loginfo("Start Greedy test num %d of %d", counter, len(number_of_sensors)*len(gs_resolution))
                 update_config(dyn_reconf_client, start_config)
-                update = {"number_of_sensors": str(num)}
+                update = {"number_of_sensors": str(num), "GS_target_offset": str(spacing)}
                 old_cfg, new_cfg = update_config(dyn_reconf_client, update)
 
                 # call action
                 goal.service_id = algo["GreedySearch"]
-                # set offset
-                goal.service_input_arg = offset
                 delta_t, result = call_action(client,goal)
                 
-                result_to_file(f, goal.service_id, update, result, delta_t, service_input_arg=goal.service_input_arg)
-                # to be sure, reset offset
-                goal.service_input_arg = 0.0
+                result_to_file(f, goal.service_id, update, result, delta_t)
+        f.write("===================\n\n\n")
+
+        counter = 0
+        # Greedy on Perimeter with different number of sensors and different spacing of grid
+        for num in number_of_sensors:
+            for spacing in gs_resolution:
+                for offset in perimeter_offsets:
+                    counter += 1
+                    rospy.loginfo("Start Greedy on Perimeter test num %d of %d", counter, len(number_of_sensors)*len(gs_resolution)*len(perimeter_offsets))
+                    update_config(dyn_reconf_client, start_config)
+                    update = {"number_of_sensors": str(num), "GS_target_offset": str(spacing)}
+                    old_cfg, new_cfg = update_config(dyn_reconf_client, update)
+
+                    # call action
+                    goal.service_id = algo["GreedySearchPerimeter"]
+                    # set offset
+                    goal.service_input_arg = offset
+                    delta_t, result = call_action(client,goal)
+                    
+                    result_to_file(f, goal.service_id, update, result, delta_t, service_input_arg=goal.service_input_arg)
+                    # to be sure, reset offset
+                    goal.service_input_arg = 0.0
+        f.write("===================\n\n\n")
                 
 
         # Finished
