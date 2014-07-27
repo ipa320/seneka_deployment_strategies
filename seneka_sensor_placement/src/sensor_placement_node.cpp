@@ -120,6 +120,9 @@ sensor_placement_node::sensor_placement_node()
   // initialize best priority sum
   best_priority_sum_ = 0;
 
+  // set particle_swarm_poi_flag_ low -b-
+  particle_swarm_poi_flag_ = false;
+
   // initialize other variables
   map_received_ = false;
   AoI_received_ = false;
@@ -256,7 +259,7 @@ void sensor_placement_node::getParams()
 }
 
 // function to get the ROS parameters from dynamic reconfigure
-void sensor_placement_node::configureCallback(seneka_sensor_placement::seneka_sensor_placementConfig &config, uint32_t level) 
+void sensor_placement_node::configureCallback(seneka_sensor_placement::seneka_sensor_placementConfig &config, uint32_t level)
 {
   if (as_.isActive())
     ROS_WARN("Cannot set new parameters while optimization is running!");
@@ -1225,6 +1228,7 @@ void sensor_placement_node::GreedyPSOptimize()
     iter = 0;
     best_cov_ = 0;
     best_priority_sum_ = 0;
+    particle_swarm_poi_flag_ = false;
 
     //place sensors randomly on perimeter for each particle with random velocities
     if(AoI_received_)
@@ -1245,7 +1249,7 @@ void sensor_placement_node::GreedyPSOptimize()
         }
       }
       //after the initialization step we're looking for a new global best solution
-      getGlobalBest();
+      getGlobalBest_withPoI();
 
       //publish the actual global best visualization
       marker_array_pub_.publish(global_best_.getVisualizationMarkers());
@@ -1276,7 +1280,7 @@ void sensor_placement_node::GreedyPSOptimize()
           //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
         }
       //after the update step we're looking for a new global best solution
-      getGlobalBest();
+      getGlobalBest_withPoI();
 
       //publish the actual global best visualization
       marker_array_pub_.publish(global_best_.getVisualizationMarkers());
@@ -1350,6 +1354,7 @@ void sensor_placement_node::runGS()
 //new function to find global best particle
 void sensor_placement_node::getGlobalBest()
 {
+  ROS_INFO("running old global best function");
   // a new global best solution is accepted if
   // (1) more points of interest are being covered, or if same number of points of interest are being covered, but:
   // (2) the coverage is higher than the old best coverage or
@@ -1389,6 +1394,56 @@ void sensor_placement_node::getGlobalBest()
         }
       }
     }
+  }
+}
+
+
+void sensor_placement_node::getGlobalBest_withPoI()
+{
+  for(size_t i=0; i<particle_swarm_.size(); i++)
+  {
+    if (particle_swarm_.at(i).poi_flag_is_set()) //means if any particle found a PoI, consider its coverage
+    {
+      ROS_INFO("detected high flag");
+      //flag to indicate that a particle in the swarm has found a PoI and covering it
+      particle_swarm_poi_flag_ = true; //should be initialized with false and resetted to false when current sensor's placement position in GreedyPSO is finalized
+      particle_swarm_.at(i).set_poi_flag(false); //reset the flag now
+      if (particle_swarm_.at(i).getActualCoverage() > best_cov_)
+      {
+        best_cov_ = particle_swarm_.at(i).getActualCoverage();
+        global_best_ = particle_swarm_.at(i);
+        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+        best_particle_index_ = i;
+      }
+      else if( (particle_swarm_.at(i).getActualCoverage() == best_cov_) && (particle_swarm_.at(i).getMultipleCoverageIndex() < global_best_multiple_coverage_ ))
+      {
+        best_cov_ = particle_swarm_.at(i).getActualCoverage();
+        global_best_ = particle_swarm_.at(i);
+        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+        best_particle_index_ = i;
+      }
+    }
+    //go into this alternative only if till now no particle is covering a PoI
+    else if (particle_swarm_poi_flag_ == false)
+    //else
+    {
+      ROS_INFO("detected low flag");
+      if(particle_swarm_.at(i).getActualCoverage() > best_cov_)
+      {
+        best_cov_ = particle_swarm_.at(i).getActualCoverage();
+        global_best_ = particle_swarm_.at(i);
+        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+        best_particle_index_ = i;
+      }
+      else if( (particle_swarm_.at(i).getActualCoverage() == best_cov_) && (particle_swarm_.at(i).getMultipleCoverageIndex() < global_best_multiple_coverage_ ))
+      {
+        best_cov_ = particle_swarm_.at(i).getActualCoverage();
+        global_best_ = particle_swarm_.at(i);
+        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+        best_particle_index_ = i;
+      }
+    }
+    //else ROS_INFO("Error in Global best particle calculation");
   }
 }
 

@@ -114,6 +114,9 @@ private:
   // bool variable to check if the targets were already taken from the map
   bool targets_saved_;
 
+  // flag to indicate that a particle within particle swarm is covering a PoI -b-
+  bool particle_swarm_poi_flag_;
+
   // actual area of interest to be covered by the sensor nodes
   geometry_msgs::PolygonStamped area_of_interest_;
 
@@ -258,7 +261,7 @@ public:
 
   // function to get the ROS parameters from dynamic reconfigure
   void configureCallback(seneka_sensor_placement::seneka_sensor_placementConfig &config, uint32_t level);
-  
+
   // function to get an array of targets from the map and the area of interest specified as polygon
   bool getTargets();
 
@@ -288,6 +291,9 @@ public:
 
   // function to get the current global best solution
   void getGlobalBest();
+
+  // function to get the current global best solution
+  void getGlobalBest_withPoI();
 
   //function to return an area of interest polygon which is offsetted according to the offset ińput
   geometry_msgs::PolygonStamped offsetAoI(double offset);

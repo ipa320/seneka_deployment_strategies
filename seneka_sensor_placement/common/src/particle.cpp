@@ -76,6 +76,9 @@ particle::particle()
   // initialize priority sum
   priority_sum_ = 0;
 
+  // -b-
+  set_poi_flag(false);
+
   // initialize coverage matrix
 
   // initialize sensor array with as many entries as specified by sensors_num_
@@ -197,6 +200,18 @@ int particle::getMultipleCoverageIndex()
 int particle::getPrioritySum()
 {
   return priority_sum_;
+}
+
+// -b-
+bool particle::poi_flag_is_set()
+{
+  return poi_flag_;
+}
+
+//-b-
+void particle::set_poi_flag(bool status)
+{
+  poi_flag_ = status;
 }
 
 // function to get targets_info_var
@@ -903,7 +918,17 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
               targets_with_info_var_.at(cell_in_vector_coordinates).covered = true;
 
               //calculate the priority of target
-              priority_sum_ = priority_sum_ + pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority;
+              //priority_sum_ = priority_sum_ + pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority;
+
+              // -b-
+              if (pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority > 0)
+              {
+                this->set_poi_flag(true);
+                ROS_INFO("a poi flag is set");
+
+              }
+
+
 
               if (lock_targets==true)
               {
