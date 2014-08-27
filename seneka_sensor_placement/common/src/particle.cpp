@@ -77,7 +77,7 @@ particle::particle()
   priority_sum_ = 0;
 
   // -b-
-  set_poi_flag(false);
+  reset_poi_flag();
 
   // initialize coverage matrix
 
@@ -209,9 +209,14 @@ bool particle::poi_flag_is_set()
 }
 
 //-b-
-void particle::set_poi_flag(bool status)
+void particle::set_poi_flag()
 {
-  poi_flag_ = status;
+  poi_flag_ = true;
+}
+
+void particle::reset_poi_flag()
+{
+  poi_flag_ = false;
 }
 
 // function to get targets_info_var
@@ -923,8 +928,8 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
               // -b-
               if (pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority > 0)
               {
-                this->set_poi_flag(true);
-                ROS_INFO("a poi flag is set");
+                this->set_poi_flag();
+         //       ROS_INFO("a poi flag is set");
 
               }
 

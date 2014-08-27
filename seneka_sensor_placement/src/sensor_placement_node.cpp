@@ -68,7 +68,7 @@ sensor_placement_node::sensor_placement_node()
   // ros subscribers
   AoI_sub_ = nh_.subscribe(std::string("in_AoI_poly"), 1,
                            &sensor_placement_node::AoICB, this);
-  PoI_sub_ = nh_.subscribe(std::string("out_PoI_marker_array"), 1,                           //rename to in_PoI_MA
+  PoI_sub_ = nh_.subscribe(std::string("out_PoI_marker_array"), 1,                           //TODO: rename to in_PoI_MA
                            &sensor_placement_node::PoICB, this);
   forbidden_area_sub_ = nh_.subscribe(std::string("in_forbidden_area"), 1,
                                       &sensor_placement_node::forbiddenAreaCB, this);
@@ -120,8 +120,8 @@ sensor_placement_node::sensor_placement_node()
   // initialize best priority sum
   best_priority_sum_ = 0;
 
-  // set particle_swarm_poi_flag_ low -b-
-  particle_swarm_poi_flag_ = false;
+  // initialize flag
+  particle_swarm_is_covering_poi_ = false;
 
   // initialize other variables
   map_received_ = false;
@@ -1206,7 +1206,8 @@ void sensor_placement_node::PSOptimize()
 
 }
 
-// execute PSO as many times as the number of sensors. Each PSO run gives placement result for one sensor at a time
+//GreedyPSO algorithm looks for solution of only one sensor at a time. Therefore, the PSO algorithm is repeatedly run to give result for all sensors.
+//One complete run of the PSO algorithm will be referred to as a "PSO round".
 void sensor_placement_node::GreedyPSOptimize()
 {
   //clock_t t_start;
@@ -1218,17 +1219,18 @@ void sensor_placement_node::GreedyPSOptimize()
   //PSO-iterator
   int iter = 0;
   std::vector<geometry_msgs::Pose> global_pose;
-  //initialize total coverage by GreedyPSO
+  //reset total coverage by GreedyPSO
   total_GreedyPSO_covered_targets_num_ = 0;
 
-  //iterate whole swarm optimization step as many times as the number of sensors
+  //NOTE: One iteration of following loop = One "PSO round"
+  //whole swarm optimization step (=PSO round) is iterated as many times as the number of sensors
   for (unsigned int sensor_iter = 0; sensor_iter<sensor_num_; sensor_iter++)
   {
-    //reinitialize
+    //reset variables
     iter = 0;
     best_cov_ = 0;
     best_priority_sum_ = 0;
-    particle_swarm_poi_flag_ = false;
+    particle_swarm_is_covering_poi_ = false;
 
     //place sensors randomly on perimeter for each particle with random velocities
     if(AoI_received_)
@@ -1248,7 +1250,8 @@ void sensor_placement_node::GreedyPSOptimize()
           global_best_ = particle_swarm_.at(i);
         }
       }
-      //after the initialization step we're looking for a new global best solution
+      // -b- ?? after the initialization step we're looking for a new global best solution
+      //initialize global best solution
       getGlobalBest_withPoI();
 
       //publish the actual global best visualization
@@ -1402,13 +1405,27 @@ void sensor_placement_node::getGlobalBest_withPoI()
 {
   for(size_t i=0; i<particle_swarm_.size(); i++)
   {
-    if (particle_swarm_.at(i).poi_flag_is_set()) //means if any particle found a PoI, consider its coverage
+    if (particle_swarm_.at(i).poi_flag_is_set())
     {
-      ROS_INFO("detected high flag");
-      //flag to indicate that a particle in the swarm has found a PoI and covering it
-      particle_swarm_poi_flag_ = true; //should be initialized with false and resetted to false when current sensor's placement position in GreedyPSO is finalized
-      particle_swarm_.at(i).set_poi_flag(false); //reset the flag now
-      if (particle_swarm_.at(i).getActualCoverage() > best_cov_)
+      //ROS_INFO("detected high flag");
+
+      // -b- test
+      if (particle_swarm_is_covering_poi_ == false)
+      {
+        particle_swarm_is_covering_poi_ = true; //save this information so that other solutions which are not covering a point of interest are discarded (for current PSO round)
+        best_cov_ = 0;
+        //global_best_ = 0;
+        global_best_multiple_coverage_ = 0;
+        best_particle_index_ = 0;
+
+
+      }
+      // -b- end of test
+
+
+      //particle_swarm_is_covering_poi_ = true; //save this information so that other solutions which are not covering a point of interest are discarded (for current PSO round)
+      particle_swarm_.at(i).reset_poi_flag(); //reset the particle's poi flag (-b- why?) -- poi_flag is like a key this the particle has to gain everytime in order to access this region of code
+      if (particle_swarm_.at(i).getActualCoverage() > best_cov_)    //here is the problem!! -b- !! if the non-poi coverage is high in first run, then even if a poi is covered, the update will not be donell
       {
         best_cov_ = particle_swarm_.at(i).getActualCoverage();
         global_best_ = particle_swarm_.at(i);
@@ -1424,10 +1441,10 @@ void sensor_placement_node::getGlobalBest_withPoI()
       }
     }
     //go into this alternative only if till now no particle is covering a PoI
-    else if (particle_swarm_poi_flag_ == false)
+    else if (particle_swarm_is_covering_poi_ == false)
     //else
     {
-      ROS_INFO("detected low flag");
+//      ROS_INFO("detected low flag");
       if(particle_swarm_.at(i).getActualCoverage() > best_cov_)
       {
         best_cov_ = particle_swarm_.at(i).getActualCoverage();

@@ -110,7 +110,7 @@ private:
   // priority sum
   int priority_sum_;
 
-  // PoI flag
+  // flag to indicate that whether or not this particle is covering a point of interest
   bool poi_flag_;
 
   // covered targets by GreedyPSO
@@ -179,7 +179,9 @@ public:
   // -b-
   bool poi_flag_is_set();
 
-  void set_poi_flag(bool status);
+  void set_poi_flag();
+
+  void reset_poi_flag();
 
   // function to get targets_info_var
   std::vector<target_info_var> getTargetsWithInfoVar();

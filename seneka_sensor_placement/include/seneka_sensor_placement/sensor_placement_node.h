@@ -115,7 +115,7 @@ private:
   bool targets_saved_;
 
   // flag to indicate that a particle within particle swarm is covering a PoI -b-
-  bool particle_swarm_poi_flag_;
+  bool particle_swarm_is_covering_poi_;
 
   // actual area of interest to be covered by the sensor nodes
   geometry_msgs::PolygonStamped area_of_interest_;
