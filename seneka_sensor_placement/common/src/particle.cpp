@@ -76,7 +76,7 @@ particle::particle()
   // initialize priority sum
   priority_sum_ = 0;
 
-  // -b-
+  // make sure poi flag is low
   reset_poi_flag();
 
   // initialize coverage matrix
@@ -110,7 +110,7 @@ particle::particle(int num_of_sensors, int num_of_targets, FOV_2D_model sensor_m
   // initialize priority sum
   priority_sum_ = 0;
 
-// initialize sensor vector with as many entries as specified by sensors_num_
+  // initialize sensor vector with as many entries as specified by sensors_num_
   sensors_.assign(sensor_num_, sensor_model);
 }
 
@@ -202,18 +202,19 @@ int particle::getPrioritySum()
   return priority_sum_;
 }
 
-// -b-
+// function to check the status of the poi flag
 bool particle::poi_flag_is_set()
 {
   return poi_flag_;
 }
 
-//-b-
+// function to set(raise) poi flag. Raising poi_flag gives the particle a higher priority in getGlobalBest_withPoI() function
 void particle::set_poi_flag()
 {
   poi_flag_ = true;
 }
 
+// function to reset poi flag
 void particle::reset_poi_flag()
 {
   poi_flag_ = false;
@@ -922,18 +923,9 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
               // now the given target is covered by at least one sensor
               targets_with_info_var_.at(cell_in_vector_coordinates).covered = true;
 
-              //calculate the priority of target
-              //priority_sum_ = priority_sum_ + pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority;
-
-              // -b-
+              // if the currently covered target has a priority (i.e. it is a point of interest), then raise poi flag to give this particle a higher priority
               if (pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority > 0)
-              {
                 this->set_poi_flag();
-         //       ROS_INFO("a poi flag is set");
-
-              }
-
-
 
               if (lock_targets==true)
               {

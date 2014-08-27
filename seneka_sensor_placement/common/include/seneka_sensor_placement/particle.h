@@ -176,11 +176,13 @@ public:
   // function to get the priority sum of the particle
   int getPrioritySum();
 
-  // -b-
+  // function to check the status of the poi flag
   bool poi_flag_is_set();
 
+  // function to set(raise) poi flag. Raising poi_flag gives the particle a higher priority in getGlobalBest_withPoI() function
   void set_poi_flag();
 
+  // function to reset poi flag
   void reset_poi_flag();
 
   // function to get targets_info_var

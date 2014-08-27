@@ -86,13 +86,13 @@ sensor_placement_node::sensor_placement_node()
   // ros service clients
   sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>(std::string("static_map"));
 
-  //register the preempt callback function
+  // register the preempt callback function
   as_.registerPreemptCallback(boost::bind(&sensor_placement_node::preemptCB, this));
 
-  //initialize action success variable
+  // initialize action success variable
   action_success_ = true;
 
-  //start the action server
+  // start the action server
   as_.start();
 
   // get parameters from parameter server if possible
@@ -1250,11 +1250,10 @@ void sensor_placement_node::GreedyPSOptimize()
           global_best_ = particle_swarm_.at(i);
         }
       }
-      // -b- ?? after the initialization step we're looking for a new global best solution
       //initialize global best solution
       getGlobalBest_withPoI();
 
-      //publish the actual global best visualization
+      //publish the global best visualization
       marker_array_pub_.publish(global_best_.getVisualizationMarkers());
     }
 
@@ -1405,27 +1404,20 @@ void sensor_placement_node::getGlobalBest_withPoI()
 {
   for(size_t i=0; i<particle_swarm_.size(); i++)
   {
+    // if a particle's poi flag is set, then it qualifies already for global best particle evaluation (i.e. it is given high priority)
     if (particle_swarm_.at(i).poi_flag_is_set())
     {
-      //ROS_INFO("detected high flag");
-
-      // -b- test
+      // if particle swarm's poi flag was still not set
       if (particle_swarm_is_covering_poi_ == false)
       {
-        particle_swarm_is_covering_poi_ = true; //save this information so that other solutions which are not covering a point of interest are discarded (for current PSO round)
+        // then set this flag
+        particle_swarm_is_covering_poi_ = true;
+        // and, force this particle to be saved as globalbest in the following global best particle evaluation
         best_cov_ = 0;
-        //global_best_ = 0;
-        global_best_multiple_coverage_ = 0;
-        best_particle_index_ = 0;
-
-
       }
-      // -b- end of test
 
-
-      //particle_swarm_is_covering_poi_ = true; //save this information so that other solutions which are not covering a point of interest are discarded (for current PSO round)
-      particle_swarm_.at(i).reset_poi_flag(); //reset the particle's poi flag (-b- why?) -- poi_flag is like a key this the particle has to gain everytime in order to access this region of code
-      if (particle_swarm_.at(i).getActualCoverage() > best_cov_)    //here is the problem!! -b- !! if the non-poi coverage is high in first run, then even if a poi is covered, the update will not be donell
+      //global best particle evaluation
+      if (particle_swarm_.at(i).getActualCoverage() > best_cov_)
       {
         best_cov_ = particle_swarm_.at(i).getActualCoverage();
         global_best_ = particle_swarm_.at(i);
@@ -1439,12 +1431,16 @@ void sensor_placement_node::getGlobalBest_withPoI()
         global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
         best_particle_index_ = i;
       }
+
+      // reset the particle's poi flag
+      particle_swarm_.at(i).reset_poi_flag(); // note that poi_flag is used as a "key" which the particle has to gain everytime in order to be treated with high priority
+
     }
-    //go into this alternative only if till now no particle is covering a PoI
+
+    // if no particle within the swarm found a point of interest (till yet), then choose this last alternative (low priority)
     else if (particle_swarm_is_covering_poi_ == false)
-    //else
     {
-//      ROS_INFO("detected low flag");
+      //global best particle evaluation
       if(particle_swarm_.at(i).getActualCoverage() > best_cov_)
       {
         best_cov_ = particle_swarm_.at(i).getActualCoverage();
@@ -1460,7 +1456,7 @@ void sensor_placement_node::getGlobalBest_withPoI()
         best_particle_index_ = i;
       }
     }
-    //else ROS_INFO("Error in Global best particle calculation");
+    //note: if a particle qualifies for no alternative, i.e. particle_swarm_.at(i).poi_flag_is_set() == false && particle_swarm_is_covering_poi_ == true, then it is discarded
   }
 }
 
