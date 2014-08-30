@@ -923,7 +923,10 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
               // now the given target is covered by at least one sensor
               targets_with_info_var_.at(cell_in_vector_coordinates).covered = true;
 
-              // if the currently covered target has a priority (i.e. it is a point of interest), then raise poi flag to give this particle a higher priority
+              // (for original PSO) calculate priority sum
+              priority_sum_ = priority_sum_ + pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority;
+
+              // (forGreedyPSO) if the target has a priority (i.e. it is a point of interest), then raise poi flag to give this particle a higher priority
               if (pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority > 0)
                 this->set_poi_flag();
 

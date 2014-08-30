@@ -1356,7 +1356,6 @@ void sensor_placement_node::runGS()
 //new function to find global best particle
 void sensor_placement_node::getGlobalBest()
 {
-  ROS_INFO("running old global best function");
   // a new global best solution is accepted if
   // (1) more points of interest are being covered, or if same number of points of interest are being covered, but:
   // (2) the coverage is higher than the old best coverage or
