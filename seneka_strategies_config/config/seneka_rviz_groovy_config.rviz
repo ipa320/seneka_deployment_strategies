@@ -14,7 +14,7 @@ Panels:
         - /Points_of_interest1
         - /Points_of_interest1/Namespaces1
       Splitter Ratio: 0.585185
-    Tree Height: 748
+    Tree Height: 1356
   - Class: rviz/Time
     Experimental: true
     Name: Time
@@ -65,11 +65,7 @@ Visualization Manager:
       Marker Topic: /sensor_fovs
       Name: SensorFoVs
       Namespaces:
-        camera0: true
-        camera1: true
-        camera2: true
-        camera3: true
-        camera4: true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -92,11 +88,7 @@ Visualization Manager:
       Marker Topic: /fa_marker_array
       Name: ForbiddenAreas
       Namespaces:
-        forbidden_area0: true
-        forbidden_area1: true
-        forbidden_area2: true
-        forbidden_area3: true
-        forbidden_area4: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -104,13 +96,7 @@ Visualization Manager:
       Marker Topic: /out_PoI_marker_array
       Name: Points_of_interest
       Namespaces:
-        PoI_marker_size0: true
-        PoI_marker_size1: true
-        PoI_marker_size2: true
-        PoI_marker_size3: true
-        PoI_marker_size4: true
-        PoI_marker_size5: true
-        PoI_marker_size6: true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
@@ -136,21 +122,21 @@ Visualization Manager:
       Class: rviz/TopDownOrtho
       Name: Current View
       Near Clip Distance: 0.01
-      Scale: 5.72144
+      Scale: 10.1012
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 150.489
-      Y: 173.475
+      X: 145.109
+      Y: 151.423
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1026
+  Height: 1634
   Help:
     collapsed: false
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000003000000000000015a0000037bfc0200000006fb000000100044006900730070006c00610079007301000000280000037b000000dd00fffffffb0000000c00540065006c0065006f00700000000330000000b40000000000000000fb0000001e0054006f006f006c002000500072006f007000650072007400690065007300000002f8000000ab0000006400fffffffb0000001200530065006c0065006300740069006f006e00000002f8000000ab0000006400fffffffb0000000800480065006c007000000002ec000000b70000007600fffffffb0000001200530065006c0065006300740069006f006e00000002f8000000ab000000000000000000000001000001210000037bfc0200000001fb0000000a0056006900650077007301000000280000037b000000b000ffffff000000030000055f0000003bfc0100000001fb0000000800540069006d006501000000000000055f0000031b00ffffff000002d80000037b00000004000000040000000800000008fc00000002000000020000000000000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000003000000000000015a000005dbfc0200000006fb000000100044006900730070006c0061007900730100000028000005db000000dd00fffffffb0000000c00540065006c0065006f00700000000330000000b40000000000000000fb0000001e0054006f006f006c002000500072006f007000650072007400690065007300000002f8000000ab0000006400fffffffb0000001200530065006c0065006300740069006f006e00000002f8000000ab0000006400fffffffb0000000800480065006c007000000002ec000000b70000007600fffffffb0000001200530065006c0065006300740069006f006e00000002f8000000ab00000000000000000000000100000121000005dbfc0200000001fb0000000a005600690065007700730100000028000005db000000b000ffffff00000003000008850000003bfc0100000001fb0000000800540069006d00650100000000000008850000031b00ffffff000005fe000005db00000004000000040000000800000008fc00000002000000020000000000000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -159,6 +145,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-  Width: 1375
-  X: 65
-  Y: 24
+  Width: 2181
+  X: 67
+  Y: 30
