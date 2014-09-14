@@ -110,9 +110,6 @@ private:
   // priority sum
   int priority_sum_;
 
-  // flag to indicate that whether or not this particle is covering a point of interest
-  bool poi_flag_;
-
   // covered targets by GreedyPSO
   int GreedyPSO_covered_targets_num_;
 
@@ -134,7 +131,6 @@ private:
 
   // actual map
   const nav_msgs::OccupancyGrid * pMap_;
-
 
 public:
 
@@ -175,15 +171,6 @@ public:
 
   // function to get the priority sum of the particle
   int getPrioritySum();
-
-  // function to check the status of the poi flag
-  bool poi_flag_is_set();
-
-  // function to set(raise) poi flag. Raising poi_flag gives the particle a higher priority in getGlobalBest_withPoI() function
-  void set_poi_flag();
-
-  // function to reset poi flag
-  void reset_poi_flag();
 
   // function to get targets_info_var
   std::vector<target_info_var> getTargetsWithInfoVar();

@@ -76,9 +76,6 @@ particle::particle()
   // initialize priority sum
   priority_sum_ = 0;
 
-  // make sure poi flag is low
-  reset_poi_flag();
-
   // initialize coverage matrix
 
   // initialize sensor array with as many entries as specified by sensors_num_
@@ -200,24 +197,6 @@ int particle::getMultipleCoverageIndex()
 int particle::getPrioritySum()
 {
   return priority_sum_;
-}
-
-// function to check the status of the poi flag
-bool particle::poi_flag_is_set()
-{
-  return poi_flag_;
-}
-
-// function to set(raise) poi flag. Raising poi_flag gives the particle a higher priority in getGlobalBest_withPoI() function
-void particle::set_poi_flag()
-{
-  poi_flag_ = true;
-}
-
-// function to reset poi flag
-void particle::reset_poi_flag()
-{
-  poi_flag_ = false;
 }
 
 // function to get targets_info_var
@@ -872,6 +851,11 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
 
   unsigned int number_of_rays_to_check;
 
+  // list of points of interest
+  std::vector<unsigned int> poi_list;
+  // list of priority values for the points of interest
+  std::vector<unsigned int> priority_value_list;
+
   //are the rays in between the beginning and end of the lookup table?
   if(ray_end >= ray_start)
     number_of_rays_to_check = ray_end - ray_start + 1;
@@ -926,9 +910,11 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
               // (for original PSO) calculate priority sum
               priority_sum_ = priority_sum_ + pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority;
 
-              // (forGreedyPSO) if the target has a priority (i.e. it is a point of interest), then raise poi flag to give this particle a higher priority
-              if (pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority > 0)
-                this->set_poi_flag();
+              //once priority is added, make it 0 and save it for later restoration
+              //NOTE: beware that this will cause incorrect behaviour if getCoverageRayTracing() is run on multiple threads.
+              poi_list.push_back(cell_in_vector_coordinates);
+              priority_value_list.push_back(pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority);
+              pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority = 0;
 
               if (lock_targets==true)
               {
@@ -1028,6 +1014,13 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
       ray++;
     }
   }
+
+  //now restore the priorities
+  for (size_t i=0; i<poi_list.size(); i++)
+  {
+    pTargets_with_info_fix_->at(poi_list.at(i)).priority = priority_value_list.at(i);
+  }
+
 }
 
 // function to calculate the actual and personal best coverage

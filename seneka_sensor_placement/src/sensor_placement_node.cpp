@@ -120,9 +120,6 @@ sensor_placement_node::sensor_placement_node()
   // initialize best priority sum
   best_priority_sum_ = 0;
 
-  // initialize flag
-  particle_swarm_is_covering_poi_ = false;
-
   // initialize other variables
   map_received_ = false;
   AoI_received_ = false;
@@ -1230,7 +1227,6 @@ void sensor_placement_node::GreedyPSOptimize()
     iter = 0;
     best_cov_ = 0;
     best_priority_sum_ = 0;
-    particle_swarm_is_covering_poi_ = false;
 
     //place sensors randomly on perimeter for each particle with random velocities
     if(AoI_received_)
@@ -1251,7 +1247,7 @@ void sensor_placement_node::GreedyPSOptimize()
         }
       }
       //initialize global best solution
-      getGlobalBest_withPoI();
+      getGlobalBest();
 
       //publish the global best visualization
       marker_array_pub_.publish(global_best_.getVisualizationMarkers());
@@ -1282,7 +1278,7 @@ void sensor_placement_node::GreedyPSOptimize()
           //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
         }
       //after the update step we're looking for a new global best solution
-      getGlobalBest_withPoI();
+      getGlobalBest();
 
       //publish the actual global best visualization
       marker_array_pub_.publish(global_best_.getVisualizationMarkers());
@@ -1366,7 +1362,7 @@ void sensor_placement_node::getGlobalBest()
     {
       //update the best_priority_sum_
       best_priority_sum_ = particle_swarm_.at(i).getPrioritySum();
-      ROS_INFO_STREAM("best priority updated " << best_priority_sum_);
+      ROS_INFO_STREAM("Current priority sum: " << best_priority_sum_);
 
       //update the best solution
       best_cov_ = particle_swarm_.at(i).getActualCoverage();
@@ -1395,67 +1391,6 @@ void sensor_placement_node::getGlobalBest()
         }
       }
     }
-  }
-}
-
-
-void sensor_placement_node::getGlobalBest_withPoI()
-{
-  for(size_t i=0; i<particle_swarm_.size(); i++)
-  {
-    // if a particle's poi flag is set, then it qualifies already for global best particle evaluation (i.e. it is given high priority)
-    if (particle_swarm_.at(i).poi_flag_is_set())
-    {
-      // if particle swarm's poi flag was still not set
-      if (particle_swarm_is_covering_poi_ == false)
-      {
-        // then set this flag
-        particle_swarm_is_covering_poi_ = true;
-        // and, force this particle to be saved as globalbest in the following global best particle evaluation
-        best_cov_ = 0;
-      }
-
-      //global best particle evaluation
-      if (particle_swarm_.at(i).getActualCoverage() > best_cov_)
-      {
-        best_cov_ = particle_swarm_.at(i).getActualCoverage();
-        global_best_ = particle_swarm_.at(i);
-        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
-        best_particle_index_ = i;
-      }
-      else if( (particle_swarm_.at(i).getActualCoverage() == best_cov_) && (particle_swarm_.at(i).getMultipleCoverageIndex() < global_best_multiple_coverage_ ))
-      {
-        best_cov_ = particle_swarm_.at(i).getActualCoverage();
-        global_best_ = particle_swarm_.at(i);
-        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
-        best_particle_index_ = i;
-      }
-
-      // reset the particle's poi flag
-      particle_swarm_.at(i).reset_poi_flag(); // note that poi_flag is used as a "key" which the particle has to gain everytime in order to be treated with high priority
-
-    }
-
-    // if no particle within the swarm found a point of interest (till yet), then choose this last alternative (low priority)
-    else if (particle_swarm_is_covering_poi_ == false)
-    {
-      //global best particle evaluation
-      if(particle_swarm_.at(i).getActualCoverage() > best_cov_)
-      {
-        best_cov_ = particle_swarm_.at(i).getActualCoverage();
-        global_best_ = particle_swarm_.at(i);
-        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
-        best_particle_index_ = i;
-      }
-      else if( (particle_swarm_.at(i).getActualCoverage() == best_cov_) && (particle_swarm_.at(i).getMultipleCoverageIndex() < global_best_multiple_coverage_ ))
-      {
-        best_cov_ = particle_swarm_.at(i).getActualCoverage();
-        global_best_ = particle_swarm_.at(i);
-        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
-        best_particle_index_ = i;
-      }
-    }
-    //note: if a particle qualifies for no alternative, i.e. particle_swarm_.at(i).poi_flag_is_set() == false && particle_swarm_is_covering_poi_ == true, then it is discarded
   }
 }
 
