@@ -102,6 +102,7 @@ add_executable(sensor_placement_node 	src/sensor_placement_node.cpp
 					)
 add_executable(sensor_placement_test	test/sensor_placement_test_publisher.cpp)
 add_executable(sensor_placement_interface src/sensor_placement_interface.cpp)
+add_executable(sensor_placement_hypervisor src/sensor_placement_hypervisor.cpp)
 
 add_dependencies(sensor_placement_node  ${PROJECT_NAME}_gencpp)
 add_dependencies(sensor_placement_node  ${PROJECT_NAME}_gencfg)
@@ -116,6 +117,10 @@ add_dependencies(sensor_placement_interface  ${PROJECT_NAME}_gencpp)
  )
  
  target_link_libraries(sensor_placement_interface
+  ${catkin_LIBRARIES}
+)
+
+ target_link_libraries(sensor_placement_hypervisor
   ${catkin_LIBRARIES}
 )
 
