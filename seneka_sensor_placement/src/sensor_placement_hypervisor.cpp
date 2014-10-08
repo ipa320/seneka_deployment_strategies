@@ -57,11 +57,14 @@ sensor_placement_hypervisor::sensor_placement_hypervisor()
 
   //publish on "quanjo_maneuver" topic
   quanjo_maneuver_pub_ = nh_.advertise<seneka_sensor_placement::quanjo_maneuver>(std::string("quanjo_maneuver"), 1);
+
+  //sensor_nodes_pickup service initialization
+  ss_pickup_sensor_nodes_ = nh_.advertiseService("pickup_sensor_nodes", &sensor_placement_hypervisor::srvCB_pickup_sensor_nodes, this);
 }
 
 sensor_placement_hypervisor::~sensor_placement_hypervisor(){}
 
-// callback function for nav_path_sub_
+// callback function for nav_path_sub_ subscriber
 void sensor_placement_hypervisor::navPathSubCB(const nav_msgs::Path new_path)
 {
   // save the path in an std::vector
@@ -74,13 +77,32 @@ void sensor_placement_hypervisor::navPathSubCB(const nav_msgs::Path new_path)
 
   // publish the quanjo_maneuver message
   quanjo_maneuver_pub_.publish(maneuver_msg);
-  ROS_INFO("quanjo_maneuver message sent");
+  ROS_INFO("quanjo_maneuver message sent with PAYLOAD_DEPLOY");
+}
+
+// callback function for pickup_sensor_nodes
+bool sensor_placement_hypervisor::srvCB_pickup_sensor_nodes(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
+{
+  seneka_sensor_placement::quanjo_maneuver maneuver_msg;
+
+  for (size_t i = 0; i < paths_vec_.size(); i++)
+  {
+    // create quanjo_maneuver msg for pickup
+    maneuver_msg.path = paths_vec_.at(i);
+    maneuver_msg.payload = maneuver_msg.PAYLOAD_PICKUP;
+
+    // publish the quanjo_maneuver message
+    quanjo_maneuver_pub_.publish(maneuver_msg);
+    ROS_INFO("quanjo_maneuver message sent with PAYLOAD_PICKUP");
+  }
+
+  //clear paths std::vector after pickup is completed TODO: check if this is the intended behaviour
+  paths_vec_.clear();
 }
 
 
 int main(int argc, char **argv)
 {
-
   ros::init(argc, argv, std::string("sensor_placement_hypervisor"));
 
   // create sensor_placement_hypervisor node object

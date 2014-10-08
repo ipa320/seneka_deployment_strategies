@@ -56,7 +56,7 @@
 #include <nav_msgs/Path.h>
 
 #include <seneka_sensor_placement/quanjo_maneuver.h>
-
+#include <std_srvs/Empty.h>
 #include <sstream>
 
 
@@ -71,20 +71,27 @@ class sensor_placement_hypervisor
   // sensor_placement_hypervisor node handle
   ros::NodeHandle nh_;
 
+  //publisher for topic "quanjo_maneuver"
+  ros::Publisher quanjo_maneuver_pub_;
+
+  //subscriber for topic "sensor_poses"
+  ros::Subscriber nav_path_sub_;
+
+  // service server for sensor_nodes_pickup service
+  ros::ServiceServer ss_pickup_sensor_nodes_;
+
   // standard constructor
   sensor_placement_hypervisor();
 
   // standard destructor
   ~sensor_placement_hypervisor();
 
-  // nav_path_sub_ callback function
+  // callback function for nav_path_sub_ subscriber
   void navPathSubCB(const nav_msgs::Path new_path);
 
-  //publisher for topic "quanjo_maneuver"
-  ros::Publisher quanjo_maneuver_pub_;
+  // callback function for pickup_sensor_nodes
+  bool srvCB_pickup_sensor_nodes(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 
-  //subscriber for topic "sensor_poses"
-  ros::Subscriber nav_path_sub_;
 };
 
 #endif //SENSOR_PLACEMENT_HYPERVISOR_H
