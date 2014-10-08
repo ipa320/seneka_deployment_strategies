@@ -48,70 +48,67 @@
  *
  ****************************************************************/
 
+#ifndef SENSOR_PLACEMENT_HYPERVISOR_H
+#define SENSOR_PLACEMENT_HYPERVISOR_H
 
-#include "sensor_placement_hypervisor.h"
+#include "ros/ros.h"
+#include "std_msgs/String.h"
+#include <nav_msgs/Path.h>
+
+#include <sstream>
 
 
-
-sensor_placement_hypervisor::sensor_placement_hypervisor()
+class sensor_placement_hypervisor
 {
-   ROS_INFO("sensor_placement_hypervisor created");
-
-  nav_path_sub = n.subscribe(std::string("sensor_poses"), 1, &sensor_placement_hypervisor::navPathSubCB, this);                  // TODO: check suitable buffer size
-  quanjo_maneuver_pub = n.advertise<std_msgs::String>(std::string("quanjo_maneuver"), 1, true);
-
-}
-
-sensor_placement_hypervisor::~sensor_placement_hypervisor(){}
-
-void sensor_placement_hypervisor::navPathSubCB(const nav_msgs::Path)
-{
+  private:
 
 
-  //TODO: save nav_path into a std::vector
-  ROS_INFO("I heard: ....................");
+  //std::vector<nav_msg> paths_list;
 
 
-  quanjo_maneuver_pub.publish(std::string("test_quanjo_maneuver_msg"));
-}
+
+  public:
+
+  ros::NodeHandle n;
+
+  // standard constructor
+  sensor_placement_hypervisor();
+  // standard destructor
+  ~sensor_placement_hypervisor();
+
+  void navPathSubCB(const nav_msgs::Path);
+
+   //publishers
+  ros::Publisher quanjo_maneuver_pub;
+
+  //subscribers
+  ros::Subscriber nav_path_sub;
+
+};
 
 
-int main(int argc, char **argv)
-{
-
-  ros::init(argc, argv, std::string("sensor_placement_hypervisor"));
+#endif //SENSOR_PLACEMENT_HYPERVISOR_H
 
 
-  // create sensor_placement_hypervisor node object
-  sensor_placement_hypervisor my_placement_hypervisor;
-
-  //specify 10hz loop rate
-  ros::Rate loop_rate(10);
-
-  int count = 0;
-
-  while (my_placement_hypervisor.n.ok())
-  {
-
-    // TODO: replace with Path+payload msg
-    std_msgs::String msg;
-
-    std::stringstream ss;
-    ss << "this is quanjo_maneuver_msg message " << count;
-    msg.data = ss.str();
 
 
-    //ROS_INFO("%s", msg.data.c_str());
-    //publish the msg on "quanjo_maneuver" topic
-    //quanjo_maneuver_pub.publish(msg);
-
-    ros::spinOnce();
-    //ros::spin();
-
-    loop_rate.sleep();
-    ++count;
-  }
 
 
-  return 0;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
