@@ -48,31 +48,33 @@
  *
  ****************************************************************/
 
-
 #include "sensor_placement_hypervisor.h"
-
-
 
 sensor_placement_hypervisor::sensor_placement_hypervisor()
 {
-   ROS_INFO("sensor_placement_hypervisor created");
+  //subscribe to "sensor_poses" topic
+  nav_path_sub_ = nh_.subscribe(std::string("sensor_poses"), 1, &sensor_placement_hypervisor::navPathSubCB, this);                  // TODO: check suitable buffer size
 
-  nav_path_sub = n.subscribe(std::string("sensor_poses"), 1, &sensor_placement_hypervisor::navPathSubCB, this);                  // TODO: check suitable buffer size
-  quanjo_maneuver_pub = n.advertise<std_msgs::String>(std::string("quanjo_maneuver"), 1, true);
-
+  //publish on "quanjo_maneuver" topic
+  quanjo_maneuver_pub_ = nh_.advertise<seneka_sensor_placement::quanjo_maneuver>(std::string("quanjo_maneuver"), 1);
 }
 
 sensor_placement_hypervisor::~sensor_placement_hypervisor(){}
 
-void sensor_placement_hypervisor::navPathSubCB(const nav_msgs::Path)
+// callback function for nav_path_sub_
+void sensor_placement_hypervisor::navPathSubCB(const nav_msgs::Path new_path)
 {
+  // save the path in an std::vector
+  paths_vec_.push_back(new_path);
 
+  // create quanjo_maneuver msg for deployment
+  seneka_sensor_placement::quanjo_maneuver maneuver_msg;
+  maneuver_msg.path = new_path;
+  maneuver_msg.payload = maneuver_msg.PAYLOAD_DEPLOY;
 
-  //TODO: save nav_path into a std::vector
-  ROS_INFO("I heard: ....................");
-
-
-  quanjo_maneuver_pub.publish(std::string("test_quanjo_maneuver_msg"));
+  // publish the quanjo_maneuver message
+  quanjo_maneuver_pub_.publish(maneuver_msg);
+  ROS_INFO("quanjo_maneuver message sent");
 }
 
 
@@ -81,37 +83,17 @@ int main(int argc, char **argv)
 
   ros::init(argc, argv, std::string("sensor_placement_hypervisor"));
 
-
   // create sensor_placement_hypervisor node object
   sensor_placement_hypervisor my_placement_hypervisor;
 
   //specify 10hz loop rate
   ros::Rate loop_rate(10);
 
-  int count = 0;
-
-  while (my_placement_hypervisor.n.ok())
+  while (my_placement_hypervisor.nh_.ok())
   {
-
-    // TODO: replace with Path+payload msg
-    std_msgs::String msg;
-
-    std::stringstream ss;
-    ss << "this is quanjo_maneuver_msg message " << count;
-    msg.data = ss.str();
-
-
-    //ROS_INFO("%s", msg.data.c_str());
-    //publish the msg on "quanjo_maneuver" topic
-    //quanjo_maneuver_pub.publish(msg);
-
     ros::spinOnce();
-    //ros::spin();
-
     loop_rate.sleep();
-    ++count;
   }
-
 
   return 0;
 }

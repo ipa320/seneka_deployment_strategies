@@ -48,10 +48,16 @@ add_action_files(
     sensorPlacement.action
 )
 
+add_message_files(
+  FILES
+  quanjo_maneuver.msg
+)
+
 generate_messages(
   DEPENDENCIES
     std_msgs
     actionlib_msgs
+    nav_msgs
 )
 
 generate_dynamic_reconfigure_options(

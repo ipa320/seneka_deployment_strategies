@@ -55,6 +55,8 @@
 #include "std_msgs/String.h"
 #include <nav_msgs/Path.h>
 
+#include <seneka_sensor_placement/quanjo_maneuver.h>
+
 #include <sstream>
 
 
@@ -62,30 +64,28 @@ class sensor_placement_hypervisor
 {
   private:
 
-
-  //std::vector<nav_msg> paths_list;
-
-
+  std::vector<nav_msgs::Path> paths_vec_;
 
   public:
 
-  ros::NodeHandle n;
+  // sensor_placement_hypervisor node handle
+  ros::NodeHandle nh_;
 
   // standard constructor
   sensor_placement_hypervisor();
+
   // standard destructor
   ~sensor_placement_hypervisor();
 
-  void navPathSubCB(const nav_msgs::Path);
+  // nav_path_sub_ callback function
+  void navPathSubCB(const nav_msgs::Path new_path);
 
-   //publishers
-  ros::Publisher quanjo_maneuver_pub;
+  //publisher for topic "quanjo_maneuver"
+  ros::Publisher quanjo_maneuver_pub_;
 
-  //subscribers
-  ros::Subscriber nav_path_sub;
-
+  //subscriber for topic "sensor_poses"
+  ros::Subscriber nav_path_sub_;
 };
-
 
 #endif //SENSOR_PLACEMENT_HYPERVISOR_H
 
