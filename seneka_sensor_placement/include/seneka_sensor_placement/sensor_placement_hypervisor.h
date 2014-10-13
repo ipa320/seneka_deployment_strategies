@@ -64,7 +64,9 @@ class sensor_placement_hypervisor
 {
   private:
 
-  std::vector<nav_msgs::Path> paths_vec_;
+//  std::vector<nav_msgs::Path> paths_vec_;
+
+  nav_msgs::Path deployed_nodes_path_;
 
   public:
 
@@ -95,27 +97,3 @@ class sensor_placement_hypervisor
 };
 
 #endif //SENSOR_PLACEMENT_HYPERVISOR_H
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

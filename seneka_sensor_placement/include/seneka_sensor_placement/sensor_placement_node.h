@@ -193,7 +193,7 @@ private:
   vector<GS_point> GS_pool_;
 
   // Greedy search object
-  greedySearch GS_solution;
+  greedySearch GS_solution_;
 
   // offset value for offsetAoI function
   double clipper_offset_value_;
@@ -258,7 +258,7 @@ public:
 
   // function to get the ROS parameters from dynamic reconfigure
   void configureCallback(seneka_sensor_placement::seneka_sensor_placementConfig &config, uint32_t level);
-  
+
   // function to get an array of targets from the map and the area of interest specified as polygon
   bool getTargets();
 

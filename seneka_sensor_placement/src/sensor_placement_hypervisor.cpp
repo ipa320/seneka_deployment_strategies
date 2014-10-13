@@ -68,7 +68,7 @@ sensor_placement_hypervisor::~sensor_placement_hypervisor(){}
 void sensor_placement_hypervisor::navPathSubCB(const nav_msgs::Path new_path)
 {
   // save the path in an std::vector
-  paths_vec_.push_back(new_path);
+  //paths_vec_.push_back(new_path);
 
   // create quanjo_maneuver msg for deployment
   seneka_sensor_placement::quanjo_maneuver maneuver_msg;
@@ -77,7 +77,13 @@ void sensor_placement_hypervisor::navPathSubCB(const nav_msgs::Path new_path)
 
   // publish the quanjo_maneuver message
   quanjo_maneuver_pub_.publish(maneuver_msg);
-  ROS_INFO("quanjo_maneuver message sent with PAYLOAD_DEPLOY");
+  ROS_INFO_STREAM("quanjo_maneuver message sent with PAYLOAD_DEPLOY" << maneuver_msg);
+
+  //save poses of new_path in deployed_nodes_path_
+  for (int i = 0; i < new_path.poses.size(); i++)
+  {
+    deployed_nodes_path_.poses.push_back(new_path.poses.at(i));
+  }
 }
 
 // callback function for pickup_sensor_nodes
@@ -85,21 +91,27 @@ bool sensor_placement_hypervisor::srvCB_pickup_sensor_nodes(std_srvs::Empty::Req
 {
   seneka_sensor_placement::quanjo_maneuver maneuver_msg;
 
-  for (size_t i = 0; i < paths_vec_.size(); i++)
+  if (!deployed_nodes_path_.poses.empty())
   {
     // create quanjo_maneuver msg for pickup
-    maneuver_msg.path = paths_vec_.at(i);
+    maneuver_msg.path = deployed_nodes_path_;
     maneuver_msg.payload = maneuver_msg.PAYLOAD_PICKUP;
 
     // publish the quanjo_maneuver message
     quanjo_maneuver_pub_.publish(maneuver_msg);
-    ROS_INFO("quanjo_maneuver message sent with PAYLOAD_PICKUP");
+    ROS_INFO_STREAM("quanjo_maneuver message sent with PAYLOAD_PICKUP" << maneuver_msg);
+
+    // clear path after pickup is completed
+    deployed_nodes_path_ = nav_msgs::Path();
   }
+  else
+    ROS_INFO("Deployed nodes array is empty!");
 
   //clear paths std::vector after pickup is completed TODO: check if this is the intended behaviour
-  paths_vec_.clear();
-}
+//  paths_vec_.clear();
 
+  return true;
+}
 
 int main(int argc, char **argv)
 {
