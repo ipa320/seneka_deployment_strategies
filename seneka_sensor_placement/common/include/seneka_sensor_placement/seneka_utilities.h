@@ -74,17 +74,30 @@ namespace seneka_utilities
   {
     // holds the position of the target/cell in world coordinates
     geometry_msgs::Point32 world_pos;
+
     // holds the info if the given cell is occupied
     bool occupied;
+
     // holds the info if the given cell is occupied, free or unknown
     int8_t map_data;
+
     // holds the info if the given cell is a potential target, i.e. the position is inside
     // the area of interest (-1 == outside, 0 == on perimeter, 1 == inside)
     int8_t potential_target;
+
     // holds if the target lies within the forbidden area --
     bool forbidden;
-    // holds the priority of the target
-    int priority;
+
+    // holds the priority of the target.
+    // NOTE: "mutable" is used because in updateTargetsInfoRaytracing() function, priority info is changed to zero
+    // and restored to its original value later at end of the function. To allow this TEMPORARY change, mutable is
+    // needed. Note that outside of updateTargetsInfoRaytracing()function, the priortiy still holds its original value!
+    // Further detail: Reason for this temporary change is that a ray should pass through a target only once.
+    // But this is not true. And when multple rays pass through one target, the priority of that target is incorrectly
+    // precieved to be more than it actually is. Therefore, to avoid this problem, the priority is forced to zero
+    // as soon as first ray hits the target. And then, it is restored when all rays have been checked. Hence, this
+    // change of priority is temporary and is not apparent outside of the updateTargetsInfoRaytracing() function.
+    mutable int priority;
   };
 
   //information about the target which change and need to be reset

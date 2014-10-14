@@ -132,7 +132,6 @@ private:
   // actual map
   const nav_msgs::OccupancyGrid * pMap_;
 
-
 public:
 
   // standard constructor

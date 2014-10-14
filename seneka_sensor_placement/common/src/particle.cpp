@@ -107,7 +107,7 @@ particle::particle(int num_of_sensors, int num_of_targets, FOV_2D_model sensor_m
   // initialize priority sum
   priority_sum_ = 0;
 
-// initialize sensor vector with as many entries as specified by sensors_num_
+  // initialize sensor vector with as many entries as specified by sensors_num_
   sensors_.assign(sensor_num_, sensor_model);
 }
 
@@ -851,6 +851,11 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
 
   unsigned int number_of_rays_to_check;
 
+  // list of points of interest
+  std::vector<unsigned int> poi_list;
+  // list of priority values for the points of interest
+  std::vector<unsigned int> priority_value_list;
+
   //are the rays in between the beginning and end of the lookup table?
   if(ray_end >= ray_start)
     number_of_rays_to_check = ray_end - ray_start + 1;
@@ -902,8 +907,14 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
               // now the given target is covered by at least one sensor
               targets_with_info_var_.at(cell_in_vector_coordinates).covered = true;
 
-              //calculate the priority of target
+              // (for original PSO) calculate priority sum
               priority_sum_ = priority_sum_ + pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority;
+
+              //once priority is added, make it 0 and save it for later restoration
+              //NOTE: beware that this will cause incorrect behaviour if getCoverageRayTracing() is run on multiple threads.
+              poi_list.push_back(cell_in_vector_coordinates);
+              priority_value_list.push_back(pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority);
+              pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority = 0;
 
               if (lock_targets==true)
               {
@@ -1003,6 +1014,13 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
       ray++;
     }
   }
+
+  //now restore the priorities
+  for (size_t i=0; i<poi_list.size(); i++)
+  {
+    pTargets_with_info_fix_->at(poi_list.at(i)).priority = priority_value_list.at(i);
+  }
+
 }
 
 // function to calculate the actual and personal best coverage
