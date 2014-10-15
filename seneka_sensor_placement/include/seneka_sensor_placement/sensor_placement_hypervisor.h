@@ -64,8 +64,7 @@ class sensor_placement_hypervisor
 {
   private:
 
-//  std::vector<nav_msgs::Path> paths_vec_;
-
+  // nav_msgs::Path for saving all nodes that have been deployed
   nav_msgs::Path deployed_nodes_path_;
 
   public:

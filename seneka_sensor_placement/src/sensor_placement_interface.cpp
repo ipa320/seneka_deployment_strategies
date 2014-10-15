@@ -62,17 +62,17 @@ sensor_placement_interface::sensor_placement_interface()
 :ac_("sensorPlacementActionServer", true)
 {
   // ros service servers
-  ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_interface::startPSOCallback, this);
-  ss_start_GreedyPSO_ = nh_.advertiseService("StartGreedyPSO", &sensor_placement_interface::startGreedyPSOCallback, this);
-  ss_start_GS_ = nh_.advertiseService("StartGS", &sensor_placement_interface::startGSCallback, this);
-  ss_start_GS_with_offset_ = nh_.advertiseService("StartGS_with_offset_polygon", &sensor_placement_interface::startGSWithOffsetCallback, this);
-  ss_clear_fa_vec_ = nh_.advertiseService("ClearForbiddenAreas", &sensor_placement_interface::clearFACallback, this);
-  ss_test_ = nh_.advertiseService("TestService", &sensor_placement_interface::testServiceCallback, this);
-  ss_cancel_action_ = nh_.advertiseService("CancelAction", &sensor_placement_interface::cancelGoalCallBack, this);
+  ss_start_PSO_ = nh_.advertiseService("startPSO", &sensor_placement_interface::startPSOCallback, this);
+  ss_start_GreedyPSO_ = nh_.advertiseService("startGreedyPSO", &sensor_placement_interface::startGreedyPSOCallback, this);
+  ss_start_GS_ = nh_.advertiseService("startGS", &sensor_placement_interface::startGSCallback, this);
+  ss_start_GS_with_offset_ = nh_.advertiseService("startGS_with_offset_polygon", &sensor_placement_interface::startGSWithOffsetCallback, this);
+  ss_clear_fa_vec_ = nh_.advertiseService("clear_forbidden_areas", &sensor_placement_interface::clearFACallback, this);
+  ss_test_ = nh_.advertiseService("testService", &sensor_placement_interface::testServiceCallback, this);
+  ss_cancel_action_ = nh_.advertiseService("cancel_action", &sensor_placement_interface::cancelGoalCallBack, this);
 
   ROS_INFO("Waiting for action server to start.");
   // wait for the action server to start
-  ac_.waitForServer(); //will wait for infinite time
+  ac_.waitForServer();
   ROS_INFO("Action server started, ready to send goals");
 }
 

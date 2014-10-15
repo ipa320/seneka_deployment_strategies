@@ -377,7 +377,7 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
   {
     seneka_sensor_placement::sensorPlacementResult result;
     result.coverage = best_cov_;
-    ROS_INFO("Action Succeeded with coverage of %f", best_cov_);
+    ROS_INFO("Action Succeeded with coverage of %f", best_cov_);    //TODO: with Clear_forbidden_areas action, this does not make sense. Move this info msg inside the actions themselves
     // set the action state to succeeded
     as_.setSucceeded(result);
   }

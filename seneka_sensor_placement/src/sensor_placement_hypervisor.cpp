@@ -53,7 +53,7 @@
 sensor_placement_hypervisor::sensor_placement_hypervisor()
 {
   //subscribe to "sensor_poses" topic
-  nav_path_sub_ = nh_.subscribe(std::string("sensor_poses"), 1, &sensor_placement_hypervisor::navPathSubCB, this);                  // TODO: check suitable buffer size
+  nav_path_sub_ = nh_.subscribe(std::string("sensor_poses"), 1, &sensor_placement_hypervisor::navPathSubCB, this);
 
   //publish on "quanjo_maneuver" topic
   quanjo_maneuver_pub_ = nh_.advertise<seneka_sensor_placement::quanjo_maneuver>(std::string("quanjo_maneuver"), 1);
@@ -67,9 +67,6 @@ sensor_placement_hypervisor::~sensor_placement_hypervisor(){}
 // callback function for nav_path_sub_ subscriber
 void sensor_placement_hypervisor::navPathSubCB(const nav_msgs::Path new_path)
 {
-  // save the path in an std::vector
-  //paths_vec_.push_back(new_path);
-
   // create quanjo_maneuver msg for deployment
   seneka_sensor_placement::quanjo_maneuver maneuver_msg;
   maneuver_msg.path = new_path;
@@ -105,10 +102,7 @@ bool sensor_placement_hypervisor::srvCB_pickup_sensor_nodes(std_srvs::Empty::Req
     deployed_nodes_path_ = nav_msgs::Path();
   }
   else
-    ROS_INFO("Deployed nodes array is empty!");
-
-  //clear paths std::vector after pickup is completed TODO: check if this is the intended behaviour
-//  paths_vec_.clear();
+    ROS_INFO("Did not find any deployed nodes. 'deployed_nodes_path_.poses[]' is empty!");
 
   return true;
 }
