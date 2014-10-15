@@ -88,7 +88,11 @@ Visualization Manager:
       Marker Topic: /fa_marker_array
       Name: ForbiddenAreas
       Namespaces:
-        {}
+        forbidden_area0: true
+        forbidden_area1: true
+        forbidden_area2: true
+        forbidden_area3: true
+        forbidden_area4: true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -96,7 +100,13 @@ Visualization Manager:
       Marker Topic: /out_PoI_marker_array
       Name: Points_of_interest
       Namespaces:
-        {}
+        PoI_marker_size0: true
+        PoI_marker_size1: true
+        PoI_marker_size2: true
+        PoI_marker_size3: true
+        PoI_marker_size4: true
+        PoI_marker_size5: true
+        PoI_marker_size6: true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -118,15 +128,15 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 2.23517e-08
+      Angle: -7.45058e-09
       Class: rviz/TopDownOrtho
       Name: Current View
       Near Clip Distance: 0.01
-      Scale: 10.1012
+      Scale: 5.85939
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 145.109
-      Y: 151.423
+      X: 216.891
+      Y: 73.2798
     Saved: ~
 Window Geometry:
   Displays:
@@ -146,5 +156,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 2181
-  X: 67
-  Y: 30
+  X: 58
+  Y: 24

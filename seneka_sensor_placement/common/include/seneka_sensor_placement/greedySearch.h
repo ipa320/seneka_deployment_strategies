@@ -68,7 +68,8 @@
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <visualization_msgs/MarkerArray.h>
- 
+#include <nav_msgs/Path.h>
+
 // internal includes
 #include <sensor_model.h>
 #include <seneka_utilities.h>
@@ -157,6 +158,9 @@ public:
 
   // function to get sensor's FOV slice open angles
   std::vector<double> getSliceOpenAngles();
+
+  // function to get the sensor positions of the actual solution as nav_msgs::Path
+  nav_msgs::Path getSolutionPositionsAsPath();
 
   // ************************ setter functions ************************
 

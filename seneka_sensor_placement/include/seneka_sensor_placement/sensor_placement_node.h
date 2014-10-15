@@ -193,7 +193,7 @@ private:
   vector<GS_point> GS_pool_;
 
   // Greedy search object
-  greedySearch GS_solution;
+  greedySearch GS_solution_;
 
   // offset value for offsetAoI function
   double clipper_offset_value_;

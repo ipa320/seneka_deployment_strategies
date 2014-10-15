@@ -27,7 +27,7 @@ max_num_iterations: 400
 min_coverage_to_stop: 0.95
 
 # maximal number of iterations for GreedyPSO
-max_num_iterations_per_sensor: 30
+max_num_iterations_per_sensor: 60
 
 # minimal coverage to stop the GreedyPSO algorithm
 min_sensor_coverage_to_stop: 0.08

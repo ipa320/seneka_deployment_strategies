@@ -377,7 +377,7 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
   {
     seneka_sensor_placement::sensorPlacementResult result;
     result.coverage = best_cov_;
-    ROS_INFO("Action Succeeded with coverage of %f", best_cov_);
+    ROS_INFO("Action Succeeded with coverage of %f", best_cov_);    //TODO: with Clear_forbidden_areas action, this does not make sense. Move this info msg inside the actions themselves
     // set the action state to succeeded
     as_.setSucceeded(result);
   }
@@ -1131,21 +1131,21 @@ void sensor_placement_node::initializeGS()
   // initialize dummy greedySearch object
   greedySearch gs_dummy = greedySearch(sensor_num_, target_num_, dummy_GS_2D_model);
 
-  GS_solution = gs_dummy;
-  GS_solution.setMap(map_);
-  GS_solution.setAreaOfInterest(area_of_interest_);
-  GS_solution.setOpenAngles(open_angles_);
-  GS_solution.setSliceOpenAngles(slice_open_angles_);
-  GS_solution.setRange(sensor_range_);
-  GS_solution.setPointInfoVec(point_info_vec_, target_num_);
-  GS_solution.setGSpool(GS_pool_);
-  GS_solution.setLookupTable(&lookup_table_);
-  GS_solution.setActionServer(&as_);
+  GS_solution_ = gs_dummy;
+  GS_solution_.setMap(map_);
+  GS_solution_.setAreaOfInterest(area_of_interest_);
+  GS_solution_.setOpenAngles(open_angles_);
+  GS_solution_.setSliceOpenAngles(slice_open_angles_);
+  GS_solution_.setRange(sensor_range_);
+  GS_solution_.setPointInfoVec(point_info_vec_, target_num_);
+  GS_solution_.setGSpool(GS_pool_);
+  GS_solution_.setLookupTable(&lookup_table_);
+  GS_solution_.setActionServer(&as_);
 
   if (!GS_pool_.empty())
   {
     //publish the GS_targarts grid
-    GS_targets_grid_pub_.publish(GS_solution.getGridVisualizationMarker());
+    GS_targets_grid_pub_.publish(GS_solution_.getGridVisualizationMarker());
   }
   else
     ROS_ERROR("No targets in GS_pool_");
@@ -1328,7 +1328,7 @@ void sensor_placement_node::runGS()
     //note start time for greedy search
     start_time = ros::Time::now();
     //do Greedy Search and place sensor on the max coverage pose
-    placement_success = GS_solution.newGreedyPlacement(sensor_index);
+    placement_success = GS_solution_.newGreedyPlacement(sensor_index);
     //if placement was preempted, break out of the loop
     if (placement_success == false)
     {
@@ -1339,9 +1339,9 @@ void sensor_placement_node::runGS()
     //note end time for greedy_search
     end_time= ros::Time::now() - start_time;
     //publish the solution
-    marker_array_pub_.publish(GS_solution.getVisualizationMarkers());
+    marker_array_pub_.publish(GS_solution_.getVisualizationMarkers());
     //calculate the current coverage
-    GS_coverage = GS_solution.calGScoverage();
+    GS_coverage = GS_solution_.calGScoverage();
 
     ROS_INFO_STREAM("Sensors placed: " << sensor_index+1 << " coverage: " << GS_coverage);
     ROS_INFO_STREAM("Time taken: " << end_time << "[s]");
@@ -1584,6 +1584,11 @@ bool sensor_placement_node::startGSCallback()
   // now start the actual Greedy Search  Algorithm
   ROS_INFO("Running Greedy Search Algorithm");
   runGS();
+
+  // get the GS result as nav_msgs::Path in UTM coordinates and publish it
+  PSO_result_ = GS_solution_.getSolutionPositionsAsPath();
+  nav_path_pub_.publish(PSO_result_);
+  ROS_INFO_STREAM("Print the best solution as Path: " << PSO_result_);
 
   ROS_INFO("Clean up everything");
 
