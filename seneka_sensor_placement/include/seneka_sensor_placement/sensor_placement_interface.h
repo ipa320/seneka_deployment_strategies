@@ -83,6 +83,7 @@ class sensor_placement_interface
   ros::ServiceServer ss_start_GS_;
   ros::ServiceServer ss_start_GS_with_offset_;
   ros::ServiceServer ss_clear_fa_vec_;
+  ros::ServiceServer ss_clear_PoI_vec_;
   ros::ServiceServer ss_test_;
   ros::ServiceServer ss_cancel_action_;
 
@@ -103,7 +104,10 @@ class sensor_placement_interface
   bool startGSWithOffsetCallback(seneka_sensor_placement::polygon_offset::Request& req, seneka_sensor_placement::polygon_offset::Response& res);
 
   // callback function for clearing all forbidden areas
-  bool clearFACallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+  bool clearFAVecCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+
+  // callback function for clearing all points of interest
+  bool clearPoIVecCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
   // callback function for the test service
   bool testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);

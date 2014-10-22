@@ -68,7 +68,7 @@ sensor_placement_node::sensor_placement_node()
   // ros subscribers
   AoI_sub_ = nh_.subscribe(std::string("in_AoI_poly"), 1,
                            &sensor_placement_node::AoICB, this);
-  PoI_sub_ = nh_.subscribe(std::string("out_PoI_marker_array"), 1,                           //TODO: rename to in_PoI_MA
+  PoI_sub_ = nh_.subscribe(std::string("in_PoI"), 1,
                            &sensor_placement_node::PoICB, this);
   forbidden_area_sub_ = nh_.subscribe(std::string("in_forbidden_area"), 1,
                                       &sensor_placement_node::forbiddenAreaCB, this);
@@ -81,7 +81,7 @@ sensor_placement_node::sensor_placement_node()
   offset_AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>(std::string("offset_AoI"), 1,true);
   GS_targets_grid_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(std::string("GS_targets_grid"),1,true);
   fa_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(std::string("fa_marker_array"),1,true);
-
+  PoI_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(std::string("PoI_marker_array"),1,true);   //out_PoI_marker_array ?
 
   // ros service clients
   sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>(std::string("static_map"));
@@ -354,15 +354,21 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
     case 5:
     {
       ROS_INFO("Performing 'Clear_forbidden_areas' action");
-      clearFACallback();
+      clearFAVecCallback();
       break;
     }
-
 
     case 6:
     {
       ROS_INFO("Starting 'Test' action");
       testServiceCallback();
+      break;
+    }
+
+    case 7:
+    {
+      ROS_INFO("Performing 'Clear_all_PoI' action");
+      clearPoIVecCallback();
       break;
     }
 
@@ -1648,12 +1654,21 @@ bool sensor_placement_node::startGSWithOffsetCallback()
 }
 
 // callback function for clearing all forbidden areas
-bool sensor_placement_node::clearFACallback()
+bool sensor_placement_node::clearFAVecCallback()
 {
   forbidden_area_vec_.clear();
   visualization_msgs::MarkerArray empty_marker;
   fa_marker_array_pub_.publish(empty_marker);
   fa_received_=false;
+  return true;
+}
+
+// callback function for clearing all points of interest
+bool sensor_placement_node::clearPoIVecCallback()
+{
+  PoI_vec_.clear();
+  visualization_msgs::MarkerArray empty_marker;
+  PoI_marker_array_pub_.publish(empty_marker);
   return true;
 }
 
@@ -1784,10 +1799,13 @@ void sensor_placement_node::AoICB(const geometry_msgs::PolygonStamped::ConstPtr 
 }
 
 // callback function saving the PoI received
-void sensor_placement_node::PoICB(const visualization_msgs::MarkerArray::ConstPtr &PoI)
+void sensor_placement_node::PoICB(const geometry_msgs::Point32::ConstPtr &PoI)
 {
-  // save points of interest
-  PoI_vec_ = (*PoI).markers.at(0).points;
+  // save point of interest
+  PoI_vec_.push_back(*PoI);
+
+  // publish all points of interest
+  PoI_marker_array_pub_.publish(getPoIVecVisualizationMarker(PoI_vec_));
 }
 
 // callback function saving the forbidden area received
@@ -1857,6 +1875,45 @@ visualization_msgs::MarkerArray sensor_placement_node::getPolygonVecVisualizatio
     line_strip.points.clear();
   }
   return polygon_marker_array;
+}
+
+visualization_msgs::MarkerArray sensor_placement_node::getPoIVecVisualizationMarker(std::vector<geometry_msgs::Point32> PoI_vec)
+{
+  visualization_msgs::MarkerArray points_ma;
+  visualization_msgs::Marker points_marker;
+  geometry_msgs::Point p;
+
+  unsigned int max_visualization_size = 7;
+
+  for (unsigned int i=0; i<max_visualization_size; i++)
+  {
+    // setup standard stuff
+    points_marker.header.frame_id = "/map";
+    points_marker.header.stamp = ros::Time();
+    points_marker.ns = "PoI_visualization_size" + boost::lexical_cast<std::string>(i);;
+    points_marker.action = visualization_msgs::Marker::ADD;
+    points_marker.pose.orientation.w = 1.0;
+    points_marker.id = 0;
+    points_marker.type = visualization_msgs::Marker::POINTS;
+    points_marker.scale.x = 0.2+0.1*i;
+    points_marker.scale.y = 0.2+0.1*i;
+    points_marker.color.a = 1.0;
+    points_marker.color.r = 0.0;
+    points_marker.color.g = 1.0;
+    points_marker.color.b = 0.0;
+
+    for (size_t k=0; k<PoI_vec.size(); k++)
+    {
+      p.x = PoI_vec.at(k).x;
+      p.y = PoI_vec.at(k).y;
+      p.z = PoI_vec.at(k).z;
+
+      points_marker.points.push_back(p);
+    }
+
+    points_ma.markers.push_back(points_marker);
+  }
+  return points_ma;
 }
 
 

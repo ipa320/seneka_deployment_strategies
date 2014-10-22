@@ -65,7 +65,9 @@ Visualization Manager:
       Marker Topic: /sensor_fovs
       Name: SensorFoVs
       Namespaces:
-        {}
+        camera0: true
+        camera3: true
+        camera4: true
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -88,25 +90,21 @@ Visualization Manager:
       Marker Topic: /fa_marker_array
       Name: ForbiddenAreas
       Namespaces:
-        forbidden_area0: true
-        forbidden_area1: true
-        forbidden_area2: true
-        forbidden_area3: true
-        forbidden_area4: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Marker Topic: /out_PoI_marker_array
+      Marker Topic: /PoI_marker_array
       Name: Points_of_interest
       Namespaces:
-        PoI_marker_size0: true
-        PoI_marker_size1: true
-        PoI_marker_size2: true
-        PoI_marker_size3: true
-        PoI_marker_size4: true
-        PoI_marker_size5: true
-        PoI_marker_size6: true
+        PoI_visualization_size0: true
+        PoI_visualization_size1: true
+        PoI_visualization_size2: true
+        PoI_visualization_size3: true
+        PoI_visualization_size4: true
+        PoI_visualization_size5: true
+        PoI_visualization_size6: true
       Queue Size: 100
       Value: true
   Enabled: true
