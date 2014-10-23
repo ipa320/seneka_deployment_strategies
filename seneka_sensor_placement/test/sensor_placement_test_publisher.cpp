@@ -110,7 +110,6 @@ public:
     AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_AoI_polygon", 1);
     FA_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_forbidden_area_polygon", 1);
     PoI_pub_ = nh_.advertise<geometry_msgs::Point32>("out_PoI", 1);
-    //PoI_MA_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_PoI_marker_array", 1);
 
     // initialize Datatypes
     AoI_poly_.polygon = loadPolygon("area_of_interest");
@@ -194,72 +193,6 @@ public:
     }
     return true;
   }
-/*
-  bool srvCB_PoI_set(std_srvs::Empty::Request &req,
-                 std_srvs::Empty::Response &res)
-  {
-    for (size_t k=0; k<poly.polygon.points.size(); k++)
-    {
-      PoI_pub_.publish(poly.poygon.points.at(k));
-      ROS_INFO_STREAM("publishing PoI " << i);
-      ros::Duration(0.2).sleep();   //arbitrary delay between publishing points
-    }
-  }
-
-  // helper function that simply copies PolygonStamped::polygon::points into visualization_msgs::Marker::points
-  visualization_msgs::Marker convertPolyVerticesTo(geometry_msgs::PolygonStamped poly)
-  {
-    visualization_msgs::Marker marker;
-    geometry_msgs::Point p;
-
-    for (size_t k=0; k<poly.polygon.points.size(); k++)
-    {
-      p.x = poly.polygon.points.at(k).x;
-      p.y = poly.polygon.points.at(k).y;
-      marker.points.push_back(p);
-    }
-    return marker;
-  }
-
-
-  visualization_msgs::MarkerArray getPolygonVerticesVisualizationMarker(geometry_msgs::PolygonStamped poly, std::string points_name)
-  {
-    visualization_msgs::MarkerArray points_ma;
-    visualization_msgs::Marker points_marker;
-    geometry_msgs::Point p;
-    unsigned int max_visualization_size = 7;
-
-    for (unsigned int i=0; i<max_visualization_size; i++)
-    {
-      // setup standard stuff
-      points_marker.header.frame_id = "/map";
-      points_marker.header.stamp = ros::Time();
-      points_marker.ns = points_name + boost::lexical_cast<std::string>(i);;
-      points_marker.action = visualization_msgs::Marker::ADD;
-      points_marker.pose.orientation.w = 1.0;
-      points_marker.id = 0;
-      points_marker.type = visualization_msgs::Marker::POINTS;
-      points_marker.scale.x = 0.2+0.1*i;
-      points_marker.scale.y = 0.2+0.1*i;
-      points_marker.color.a = 1.0;
-      points_marker.color.r = 0.0;
-      points_marker.color.g = 1.0;
-      points_marker.color.b = 0.0;
-
-      for (size_t k=0; k<poly.polygon.points.size(); k++)
-      {
-
-        p.x = poly.polygon.points.at(k).x;
-        p.y = poly.polygon.points.at(k).y;
-
-        points_marker.points.push_back(p);
-
-      }
-      points_ma.markers.push_back(points_marker);
-    }
-    return points_ma;
-  }
-*/
 
   // grabs a list of lists from the parameter server and returns a polygon
   geometry_msgs::Polygon loadPolygon(std::string polygon_param)

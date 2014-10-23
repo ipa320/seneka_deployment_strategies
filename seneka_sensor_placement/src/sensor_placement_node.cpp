@@ -81,7 +81,7 @@ sensor_placement_node::sensor_placement_node()
   offset_AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>(std::string("offset_AoI"), 1,true);
   GS_targets_grid_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(std::string("GS_targets_grid"),1,true);
   fa_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(std::string("fa_marker_array"),1,true);
-  PoI_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(std::string("PoI_marker_array"),1,true);   //out_PoI_marker_array ?
+  PoI_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(std::string("PoI_marker_array"),1,true);
 
   // ros service clients
   sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>(std::string("static_map"));
@@ -312,8 +312,8 @@ void sensor_placement_node::preemptCB()
 // goal callback function
 void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorPlacementGoalConstPtr &goal)
 {
-  // helper variables
   ros::Rate r(1);
+  seneka_sensor_placement::sensorPlacementResult result;
 
   //reset default action_success_ status to be true
   action_success_ = true;
@@ -324,6 +324,8 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
     {
       ROS_INFO("Starting 'PSO' action");
       startPSOCallback();
+      result.coverage = best_cov_;
+      ROS_INFO_STREAM("Action result = " << best_cov_ << " coverage");
       break;
     }
 
@@ -331,6 +333,8 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
     {
       ROS_INFO("Starting 'GreedyPSO' action");
       startGreedyPSOCallback();
+      result.coverage = best_cov_;
+      ROS_INFO_STREAM("Action result = " << best_cov_ << " coverage");
       break;
     }
 
@@ -338,6 +342,8 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
     {
       ROS_INFO("Starting 'GreedySearch' action");
       startGSCallback();
+      result.coverage = best_cov_;
+      ROS_INFO_STREAM("Action result = " << best_cov_ << " coverage");
       break;
     }
 
@@ -348,6 +354,8 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
       clipper_offset_value_ = goal->service_input_arg;
       polygon_offset_val_received_=true;
       startGSWithOffsetCallback();
+      result.coverage = best_cov_;
+      ROS_INFO_STREAM("Action result = " << best_cov_ << " coverage");
       break;
     }
 
@@ -355,6 +363,7 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
     {
       ROS_INFO("Performing 'Clear_forbidden_areas' action");
       clearFAVecCallback();
+      result.coverage = 0;
       break;
     }
 
@@ -362,6 +371,7 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
     {
       ROS_INFO("Starting 'Test' action");
       testServiceCallback();
+      result.coverage = 0;
       break;
     }
 
@@ -369,6 +379,7 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
     {
       ROS_INFO("Performing 'Clear_all_PoI' action");
       clearPoIVecCallback();
+      result.coverage = 0;
       break;
     }
 
@@ -381,14 +392,11 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
 
   if(action_success_)
   {
-    seneka_sensor_placement::sensorPlacementResult result;
-    result.coverage = best_cov_;
-    ROS_INFO("Action Succeeded with coverage of %f", best_cov_);    //TODO: with Clear_forbidden_areas action, this does not make sense. Move this info msg inside the actions themselves
-    // set the action state to succeeded
+    ROS_INFO("Action succeeded");
     as_.setSucceeded(result);
   }
   else
-    ROS_INFO("Action was not completed");
+    ROS_INFO("Action not succeeded");
 }
 
 
