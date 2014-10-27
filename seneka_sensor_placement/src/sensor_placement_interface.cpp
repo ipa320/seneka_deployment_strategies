@@ -66,7 +66,8 @@ sensor_placement_interface::sensor_placement_interface()
   ss_start_GreedyPSO_ = nh_.advertiseService("startGreedyPSO", &sensor_placement_interface::startGreedyPSOCallback, this);
   ss_start_GS_ = nh_.advertiseService("startGS", &sensor_placement_interface::startGSCallback, this);
   ss_start_GS_with_offset_ = nh_.advertiseService("startGS_with_offset_polygon", &sensor_placement_interface::startGSWithOffsetCallback, this);
-  ss_clear_fa_vec_ = nh_.advertiseService("clear_forbidden_areas", &sensor_placement_interface::clearFACallback, this);
+  ss_clear_fa_vec_ = nh_.advertiseService("clear_forbidden_areas", &sensor_placement_interface::clearFAVecCallback, this);
+  ss_clear_PoI_vec_ = nh_.advertiseService("clear_all_PoI", &sensor_placement_interface::clearPoIVecCallback, this);
   ss_test_ = nh_.advertiseService("testService", &sensor_placement_interface::testServiceCallback, this);
   ss_cancel_action_ = nh_.advertiseService("cancel_action", &sensor_placement_interface::cancelGoalCallBack, this);
 
@@ -93,7 +94,7 @@ bool sensor_placement_interface::startPSOCallback(std_srvs::Empty::Request& req,
 // callback function for the start GreedyPSO service
 bool sensor_placement_interface::startGreedyPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  ROS_INFO("'GreedyPSO' service call received");
+  ROS_INFO("'greedyPSO' service call received");
   // send goal
   seneka_sensor_placement::sensorPlacementGoal goal;
   goal.service_id = 2;
@@ -104,7 +105,7 @@ bool sensor_placement_interface::startGreedyPSOCallback(std_srvs::Empty::Request
 // callback function for the start GS service
 bool sensor_placement_interface::startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  ROS_INFO("'GreedySearch' service call received");
+  ROS_INFO("'greedySearch' service call received");
   // send goal
   seneka_sensor_placement::sensorPlacementGoal goal;
   goal.service_id = 3;
@@ -115,7 +116,7 @@ bool sensor_placement_interface::startGSCallback(std_srvs::Empty::Request& req, 
 // callback function for the start GS service with offset parameter
 bool sensor_placement_interface::startGSWithOffsetCallback(seneka_sensor_placement::polygon_offset::Request& req, seneka_sensor_placement::polygon_offset::Response& res)
 {
-  ROS_INFO("'GreedySearch_with_offset_polygon' service call received");
+  ROS_INFO("'greedySearch_with_offset_polygon' service call received");
   // send goal
   seneka_sensor_placement::sensorPlacementGoal goal;
   goal.service_id = 4;
@@ -126,9 +127,9 @@ bool sensor_placement_interface::startGSWithOffsetCallback(seneka_sensor_placeme
 }
 
 // callback function for clearing all forbidden areas
-bool sensor_placement_interface::clearFACallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+bool sensor_placement_interface::clearFAVecCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  ROS_INFO("'Clear_forbidden_areas' service call received");
+  ROS_INFO("'clear_forbidden_areas' service call received");
   // send goal
   seneka_sensor_placement::sensorPlacementGoal goal;
   goal.service_id = 5;
@@ -136,9 +137,10 @@ bool sensor_placement_interface::clearFACallback(std_srvs::Empty::Request& req, 
   return true;
 }
 
+
 bool sensor_placement_interface::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  ROS_INFO("TestService call received");
+  ROS_INFO("testService call received");
   // send goal
   seneka_sensor_placement::sensorPlacementGoal goal;
   goal.service_id = 6;
@@ -146,9 +148,20 @@ bool sensor_placement_interface::testServiceCallback(std_srvs::Empty::Request& r
   return true;
 }
 
+// callback function for clearing all points of interest
+bool sensor_placement_interface::clearPoIVecCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+  ROS_INFO("'clear_all_PoI' service call received");
+  // send goal
+  seneka_sensor_placement::sensorPlacementGoal goal;
+  goal.service_id = 7;
+  ac_.sendGoal(goal);
+  return true;
+}
+
 bool sensor_placement_interface::cancelGoalCallBack(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  ROS_INFO("Cancel action request received");
+  ROS_INFO("cancel action request received");
   ac_.cancelGoal();
   return true;
 }
