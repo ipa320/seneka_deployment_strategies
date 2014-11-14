@@ -314,7 +314,7 @@ int greedySearch::getCoverageRaytracing(size_t sensor_index)
               {
                 coverage_by_new_orientation+=pPoint_info_vec_->at(cell_in_vector_coordinates).priority;
                 //once priority is added, make it 0 and save it for later restoration
-                //NOTE: beware that this will cause incorrect behaviour if getCoverageRayTracing() is run on multiple threads.
+                //beware that this will cause incorrect behaviour if getCoverageRayTracing() is run on multiple threads.
                 poi_list.push_back(cell_in_vector_coordinates);
                 priority_value_list.push_back(pPoint_info_vec_->at(cell_in_vector_coordinates).priority);
                 pPoint_info_vec_->at(cell_in_vector_coordinates).priority = 0;

@@ -303,7 +303,7 @@ bool sensor_placement_node::preemptRequested()
 }
 
 
-// function that gets executed immediately when the action is preempted
+// function that gets executed immediately when the action is preempted -b-
 void sensor_placement_node::preemptCB()
 {
   //can be used later to do anything before the action gets aborted
@@ -1308,16 +1308,16 @@ void sensor_placement_node::GreedyPSOptimize()
     sol_particle_.setSolutionSensors(global_best_.getActualSolution().at(0));  //global_best_ particle in GreedyPSO has only one sensor
     //publish solution particle
     marker_array_pub_.publish(sol_particle_.getSolutionlVisualizationMarkers());
-    //save the coverage by global best particle, first reset targets
+    //reset targets info to lock targets that global best is covering
     global_best_.resetTargetsWithInfoVar();
-    //now lock targets that the global best is covering and count the priority sum for locked targets
+    //now really update the targets info (passing true as 2nd argument to this function means that the covered targets will be "locked")
     global_best_.updateTargetsInfoRaytracing(0, true);
     //calculate and print total coverage by GreedyPSO
     total_GreedyPSO_covered_targets_num_ = total_GreedyPSO_covered_targets_num_+ global_best_.getNumOfTargetsCovered();
+    //caluculate best_cov_
     best_cov_ = (double) total_GreedyPSO_covered_targets_num_/target_num_;
     ROS_INFO_STREAM("Total coverage by GreedyPSO: " << best_cov_);
-    //set updated targets for whole particle swarm i.e. make the state of targets_with_info_var
-    //TODO: use a pointer for targetsWithInfo instead of each particle having their own targetsWithInfo object
+    //give the particle swarm the updated targets_with_info_var (i.e. containing the locked targets; so that all particles know which targets are already covered )
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
       particle_swarm_.at(i).setTargetsWithInfoVar(global_best_.getTargetsWithInfoVar());    // priority_sum_ for each particle gets resetted here also
@@ -1680,7 +1680,7 @@ bool sensor_placement_node::clearPoIVecCallback()
   return true;
 }
 
-// callback function for the test service
+// callback function for the test service -b-
 bool sensor_placement_node::testServiceCallback()
 {
   // call static_map-service from map_server to get the actual map

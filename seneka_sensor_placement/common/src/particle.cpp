@@ -53,7 +53,6 @@
 // standard constructor
 particle::particle()
 {
-
   // initialize number of sensors
   sensor_num_ = 0;
 
@@ -703,7 +702,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
 }
 
 // function to update the targets_with_info variable
-// old version
+// old version -b-
 void particle::updateTargetsInfo(size_t sensor_index)
 {
   // initialize workspace
@@ -821,7 +820,7 @@ void particle::updateTargetsInfo(size_t sensor_index)
   }
 }
 
-//function to update the targets_with_info variable with raytracing (lookup table); with option to lock some specific targets so that their info is not resetted in resetTargetsWithInfo() function
+//function to update the targets_with_info variable with raytracing (lookup table); with option to "lock" all targets (with var info) that are being covered. "lock" means preventing target_info_var::reset() function to be called on that target
 void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_targets)
 {
   //clear vector of ray end points
@@ -907,11 +906,11 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
               // now the given target is covered by at least one sensor
               targets_with_info_var_.at(cell_in_vector_coordinates).covered = true;
 
-              // (for original PSO) calculate priority sum
+              // (for original PSO) calculate priority sum  //-b- for only original PSO?
               priority_sum_ = priority_sum_ + pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority;
 
               //once priority is added, make it 0 and save it for later restoration
-              //NOTE: beware that this will cause incorrect behaviour if getCoverageRayTracing() is run on multiple threads.
+              //beware that this will cause incorrect behaviour if getCoverageRayTracing() is run on multiple threads.
               poi_list.push_back(cell_in_vector_coordinates);
               priority_value_list.push_back(pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority);
               pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority = 0;
