@@ -1,0 +1,6 @@
+image: aknz.png
+resolution: 0.1
+origin: [5598520.662890, 365355.990657, 0.0]
+occupied_thresh: 0.6
+free_thresh: 0.4
+negate: 1

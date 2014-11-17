@@ -113,6 +113,7 @@ add_executable(sensor_placement_hypervisor src/sensor_placement_hypervisor.cpp)
 add_dependencies(sensor_placement_node  ${PROJECT_NAME}_gencpp)
 add_dependencies(sensor_placement_node  ${PROJECT_NAME}_gencfg)
 add_dependencies(sensor_placement_interface  ${PROJECT_NAME}_gencpp)
+add_dependencies(sensor_placement_hypervisor  ${PROJECT_NAME}_gencpp)
 
 ## Specify libraries to link a library or executable target against
  target_link_libraries(sensor_placement_node

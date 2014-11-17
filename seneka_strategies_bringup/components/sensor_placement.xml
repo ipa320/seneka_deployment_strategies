@@ -1,9 +1,11 @@
 <?xml version="1.0"?>
 <launch>
 
+  <arg name="config" default="sensor_placement"/>
+
   <!-- start sensor_placement -->
   <node name="sensor_placement" pkg="seneka_sensor_placement" type="sensor_placement_node" respawn="false" output="screen">
-    <rosparam file="$(find seneka_strategies_config)/config/sensor_placement.yaml" command="load"/>
+    <rosparam file="$(find seneka_strategies_config)/config/$(arg config).yaml" command="load"/>
     <!-- input -->
     <remap from="in_AoI_poly" to="/AoI_polygon"/>
     <remap from="in_forbidden_area" to="/forbidden_area_polygon"/>

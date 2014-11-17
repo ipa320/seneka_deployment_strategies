@@ -1,10 +1,12 @@
 <?xml version="1.0"?>
 <launch>
 
+  <arg name="areas" default="test"/>
+
   <!-- start sensor_placement -->
   <node name="sensor_placement_test_publisher" pkg="seneka_sensor_placement" type="sensor_placement_test" output="screen" >
     <!-- load paramteres -->
-    <rosparam file="$(find seneka_sensor_placement)/test/test.yaml" command="load" />
+    <rosparam file="$(find seneka_sensor_placement)/test/$(arg areas).yaml" command="load" />
     <!-- output -->
     <remap from="out_AoI_polygon" to="/AoI_polygon"/>
     <remap from="out_forbidden_area_polygon" to="/forbidden_area_polygon"/>

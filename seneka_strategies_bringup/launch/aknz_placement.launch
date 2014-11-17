@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="seneka_env" default="aknz"/>
+  <arg name="config" default="aknz_placement"/>
+  <arg name="map_name" default="aknz"/>
+  <arg name="map" default="$(find seneka_environments)/$(arg seneka_env)/$(arg map_name).yaml" />
+
+  
+  <include file="$(find seneka_strategies_bringup)/launch/sensor_placement.launch">
+    <arg name="map" value="$(arg map)"/>
+    <arg name="config" value="$(arg config)"/>
+  </include>
+
+</launch>
