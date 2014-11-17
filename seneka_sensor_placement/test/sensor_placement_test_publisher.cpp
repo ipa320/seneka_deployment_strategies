@@ -79,25 +79,22 @@ public:
 
   // Publishers
   ros::Publisher AoI_pub_;
-  ros::Publisher forbidden_area_pub_;
+  ros::Publisher FA_pub_;
   ros::Publisher PoI_pub_;
-  ros::Publisher PoI_MA_pub_;
 
   // Data Types for Publishers
   geometry_msgs::PolygonStamped AoI_poly_;
   geometry_msgs::PolygonStamped PoI_poly_;
-  std::vector< geometry_msgs::PolygonStamped > forbidden_area_poly_vec_;
-  geometry_msgs::Point32 PoI_;
- // sensor_placement::PolygonStamped_array forbidden_areas_poly_;
+  std::vector< geometry_msgs::PolygonStamped > FA_poly_vec_;
+  //geometry_msgs::Point32 PoI_;
 
   // Services to trigger Publishing
   ros::ServiceServer ss_AoI_;
-  ros::ServiceServer ss_forbidden_area_;
+  ros::ServiceServer ss_FA_;
   ros::ServiceServer ss_PoI_;
-  ros::ServiceServer ss_PoIs_;
 
   //parameter for number of forbidden areas
-  int num_of_fa_;
+  int num_of_FA_;
 
   // Constructor
   NodeClass()
@@ -111,42 +108,38 @@ public:
 
     // initialize Publishers
     AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_AoI_polygon", 1);
-    forbidden_area_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_forbidden_area_polygon", 1);
+    FA_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_forbidden_area_polygon", 1);
     PoI_pub_ = nh_.advertise<geometry_msgs::Point32>("out_PoI", 1);
-    PoI_MA_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_PoI_marker_array", 1);
 
     // initialize Datatypes
     AoI_poly_.polygon = loadPolygon("area_of_interest");
     AoI_poly_.header.frame_id = "/map";
 
     PoI_poly_.polygon = loadPolygon("points_of_interest");
-    //PoI_poly_.header.frame_id = "/map";
 
     //get parameter for number of forbibben areas
     if(!pnh_.hasParam("number_of_forbidden_areas"))
     {
       ROS_WARN("No parameter number_of_forbidden_areas on parameter server. Using default [0]");
     }
-    pnh_.param("number_of_forbidden_areas",num_of_fa_,0);
+    pnh_.param("number_of_forbidden_areas",num_of_FA_,0);
 
     //load forbidden areas
-    for (unsigned int i=0; i<num_of_fa_; i++)
+    for (unsigned int i=0; i<num_of_FA_; i++)
     {
       dummy_polygon.polygon = loadPolygon("forbidden_area" + boost::lexical_cast<std::string>(i));
       dummy_polygon.header.frame_id = "/map";
-      forbidden_area_poly_vec_.push_back(dummy_polygon);
+      FA_poly_vec_.push_back(dummy_polygon);
     }
 
-    PoI_.x = 100;
-    PoI_.y = 100;
-    PoI_.z = 0;
+    //PoI_.x = 100;
+    //PoI_.y = 100;
+    //PoI_.z = 0;
 
     // Service Initializations
     ss_AoI_ = nh_.advertiseService("publish_AoI", &NodeClass::srvCB_AoI, this);
-    ss_forbidden_area_ = nh_.advertiseService("publish_forbidden_areas",
-                                              &NodeClass::srvCB_forbidden_area, this);
+    ss_FA_ = nh_.advertiseService("publish_forbidden_areas", &NodeClass::srvCB_FA, this);
     ss_PoI_ = nh_.advertiseService("publish_PoI", &NodeClass::srvCB_PoI, this);
-    ss_PoIs_ = nh_.advertiseService("publish_PoIs", &NodeClass::srvCB_PoI_set, this);
   }
 
   // Destructor
@@ -169,16 +162,16 @@ public:
     }
   }
 
-  bool srvCB_forbidden_area(std_srvs::Empty::Request &req,
+  bool srvCB_FA(std_srvs::Empty::Request &req,
                  std_srvs::Empty::Response &res)
   {
-    for (size_t i=0; i<forbidden_area_poly_vec_.size(); i++)
+    for (size_t i=0; i<FA_poly_vec_.size(); i++)
     {
-      if(!forbidden_area_poly_vec_.at(i).polygon.points.empty())
+      if(!FA_poly_vec_.at(i).polygon.points.empty())
       {
-        forbidden_area_pub_.publish(forbidden_area_poly_vec_.at(i));
+        FA_pub_.publish(FA_poly_vec_.at(i));
         ROS_INFO_STREAM("publishing forbidden area " << i);
-        ros::Duration(0.2).sleep();   //-b- NOTE: arbitrary delay between publishing polygons
+        ros::Duration(0.2).sleep();   //arbitrary delay between publishing polygons
       }
       else
       {
@@ -192,56 +185,14 @@ public:
   bool srvCB_PoI(std_srvs::Empty::Request &req,
                  std_srvs::Empty::Response &res)
   {
-    PoI_pub_.publish(PoI_);
-    return true;
-  }
-
-  bool srvCB_PoI_set(std_srvs::Empty::Request &req,
-                 std_srvs::Empty::Response &res)
-  {
-    PoI_MA_pub_.publish(getPolygonVerticesVisualizationMarker(PoI_poly_, "PoI_marker_size"));
-    return true;
-  }
-
-  // function to return the visualization marker of a polygon's vertices as points
-  visualization_msgs::MarkerArray getPolygonVerticesVisualizationMarker(geometry_msgs::PolygonStamped poly, std::string points_name)
-  {
-    visualization_msgs::MarkerArray points_ma;
-    visualization_msgs::Marker points_marker;
-    geometry_msgs::Point p;
-    unsigned int max_visualization_size = 7;
-
-    for (unsigned int i=0; i<max_visualization_size; i++)
+    for (size_t i=0; i<PoI_poly_.polygon.points.size(); i++)
     {
-      // setup standard stuff
-      points_marker.header.frame_id = "/map";
-      points_marker.header.stamp = ros::Time();
-      points_marker.ns = points_name + boost::lexical_cast<std::string>(i);;
-      points_marker.action = visualization_msgs::Marker::ADD;
-      points_marker.pose.orientation.w = 1.0;
-      points_marker.id = 0;
-      points_marker.type = visualization_msgs::Marker::POINTS;
-      points_marker.scale.x = 0.2+0.1*i;
-      points_marker.scale.y = 0.2+0.1*i;
-      points_marker.color.a = 1.0;
-      points_marker.color.r = 0.0;
-      points_marker.color.g = 1.0;
-      points_marker.color.b = 0.0;
-
-      for (size_t k=0; k<poly.polygon.points.size(); k++)
-      {
-
-        p.x = poly.polygon.points.at(k).x;
-        p.y = poly.polygon.points.at(k).y;
-
-        points_marker.points.push_back(p);
-
-      }
-      points_ma.markers.push_back(points_marker);
+      PoI_pub_.publish(PoI_poly_.polygon.points.at(i));
+      ROS_INFO_STREAM("publishing PoI " << i);
+      ros::Duration(0.2).sleep();   //arbitrary delay between publishing points
     }
-    return points_ma;
+    return true;
   }
-
 
   // grabs a list of lists from the parameter server and returns a polygon
   geometry_msgs::Polygon loadPolygon(std::string polygon_param)
