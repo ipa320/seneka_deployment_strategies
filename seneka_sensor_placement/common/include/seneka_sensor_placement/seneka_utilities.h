@@ -85,7 +85,7 @@ namespace seneka_utilities
     // the area of interest (-1 == outside, 0 == on perimeter, 1 == inside)
     int8_t potential_target;
 
-    // holds if the target lies within the forbidden area --
+    // holds if the target lies within the forbidden area
     bool forbidden;
 
     // holds the priority of the target.

@@ -170,7 +170,6 @@ public:
   // ************************* help functions *************************
 
   // draws a visualization of the respective sensor model
-  virtual visualization_msgs::MarkerArray getVisualizationMarkersOld(unsigned int id) = 0;
   virtual visualization_msgs::MarkerArray getVisualizationMarkers(unsigned int id) = 0;
 };
 
@@ -249,7 +248,6 @@ public:
   int rayOfAngle(double angle);
 
   // returns the visualization markers of the respective sensor model
-  visualization_msgs::MarkerArray getVisualizationMarkersOld(unsigned int id);
   visualization_msgs::MarkerArray getVisualizationMarkers(unsigned int id);
 };
 

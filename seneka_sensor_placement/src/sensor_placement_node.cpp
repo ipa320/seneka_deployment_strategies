@@ -303,7 +303,7 @@ bool sensor_placement_node::preemptRequested()
 }
 
 
-// function that gets executed immediately when the action is preempted -b-
+// function that gets executed immediately when the action is preempted
 void sensor_placement_node::preemptCB()
 {
   //can be used later to do anything before the action gets aborted
@@ -369,14 +369,6 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
 
     case 6:
     {
-      ROS_INFO("Starting 'Test' action");
-      testServiceCallback();
-      result.coverage = 0;
-      break;
-    }
-
-    case 7:
-    {
       ROS_INFO("Performing 'Clear_all_PoI' action");
       clearPoIVecCallback();
       result.coverage = 0;
@@ -398,7 +390,6 @@ void sensor_placement_node::executeGoalCB(const seneka_sensor_placement::sensorP
   else
     ROS_INFO("Action not succeeded");
 }
-
 
 
 bool sensor_placement_node::getTargets()
@@ -1677,125 +1668,6 @@ bool sensor_placement_node::clearPoIVecCallback()
   PoI_vec_.clear();
   visualization_msgs::MarkerArray empty_marker;
   PoI_marker_array_pub_.publish(empty_marker);
-  return true;
-}
-
-// callback function for the test service -b-
-bool sensor_placement_node::testServiceCallback()
-{
-  // call static_map-service from map_server to get the actual map
-  sc_get_map_.waitForExistence();
-
-  nav_msgs::GetMap srv_map;
-
-  if(sc_get_map_.call(srv_map))
-  {
-    ROS_INFO("Map service called successfully");
-
-    if(AoI_received_)
-    {
-      // get bounding box of area of interest
-      geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
-      // cropMap to boundingBox
-      cropMap(bound_box, srv_map.response.map, map_);
-      // publish cropped map
-      map_.header.stamp = ros::Time::now();
-      map_pub_.publish(map_);
-      map_meta_pub_.publish(map_.info);
-      map_received_ = true;
-    }
-    else
-    {
-      // if no AoI was specified, we consider the whole map to be the AoI
-      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
-      map_ = srv_map.response.map;
-      map_pub_.publish(map_);
-      map_meta_pub_.publish(map_.info);
-      map_received_ = true;
-    }
-  }
-  else
-  {
-    ROS_INFO("Failed to call map service");
-  }
-
-  if(map_received_)
-  {
-    ROS_INFO("Received a map");
-
-    // now create the lookup table based on the range of the sensor and the resolution of the map
-    int radius_in_cells = floor(5 / map_.info.resolution);
-    lookup_table_ = createLookupTableCircle(radius_in_cells);
-  }
-
-  ROS_INFO("getting targets from specified map and area of interest!");
-
-  targets_saved_ = getTargets();
-  if(targets_saved_)
-  {
-    ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
-
-    ROS_INFO_STREAM("Saved " << targets_with_info_fix_.size() << " targets with info in std-vectors");
-
-  }
-
-  // initialize pointer to dummy sensor_model
-  FOV_2D_model dummy_2D_model;
-  dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
-
-  particle_num_ = 1;
-  sensor_num_ = 1;
-  open_angles_.at(0) = 1.5 * PI;
-
-  // initialize dummy particle
-  particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
-  // initialize particle swarm with given number of particles containing given number of sensors
-
-  dummy_particle.setMap(map_);
-  dummy_particle.setAreaOfInterest(area_of_interest_);
-  dummy_particle.setForbiddenAreaVec(forbidden_area_vec_);
-  dummy_particle.setOpenAngles(open_angles_);
-  dummy_particle.setRange(5);
-
-  dummy_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
-  dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
-
-  ROS_INFO_STREAM("creating lookup tables for dummy particle..");
-  dummy_particle.setLookupTable(& lookup_table_);
-  ROS_INFO_STREAM("lookup tables created.");
-
-  particle_swarm_.assign(particle_num_,dummy_particle);
-
-  // initialze the global best solution
-  global_best_ = dummy_particle;
-
-  double actual_coverage = 0;
-
-  // initialize sensors randomly on perimeter for each particle with random velocities
-  if(AoI_received_)
-  {
-    for(size_t i = 0; i < particle_swarm_.size(); i++)
-    {
-      geometry_msgs::Pose test_pos = geometry_msgs::Pose();
-      test_pos.position.x = area_of_interest_.polygon.points.at(0).x+5;
-      test_pos.position.y = area_of_interest_.polygon.points.at(0).y+5;
-      test_pos.orientation = tf::createQuaternionMsgFromYaw(PI/4);
-
-      particle_swarm_.at(i).placeSensorsAtPos(test_pos);
-
-      global_best_ = particle_swarm_.at(i);
-
-      actual_coverage = global_best_.getActualCoverage();
-
-      ROS_INFO_STREAM("coverage: " << actual_coverage);
-
-      ROS_INFO_STREAM("orientation: " << test_pos.orientation);
-      ROS_INFO_STREAM("orientation-map: " << tf::getYaw(map_.info.origin.orientation));
-    }
-  }
-  // publish global best visualization
-  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
-
   return true;
 }
 

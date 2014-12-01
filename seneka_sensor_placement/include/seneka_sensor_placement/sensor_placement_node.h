@@ -324,9 +324,6 @@ public:
   // callback function for clearing all points of interest
   bool clearPoIVecCallback();
 
-  // callback function for the test action
-  bool testServiceCallback();
-
   // callback functions
   void AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI);
   void PoICB(const geometry_msgs::Point32::ConstPtr &PoI);
@@ -349,10 +346,6 @@ protected:
 
   // string to contain the action name
   std::string action_name_;
-
-  // messages that are used to published feedback/result. NOTE: (not used yet) -b-
-  seneka_sensor_placement::sensorPlacementFeedback action_feedback_;
-  seneka_sensor_placement::sensorPlacementResult action_result_;
 
 };
 

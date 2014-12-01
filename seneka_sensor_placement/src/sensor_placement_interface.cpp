@@ -68,7 +68,6 @@ sensor_placement_interface::sensor_placement_interface()
   ss_start_GS_with_offset_ = nh_.advertiseService("startGS_with_offset_polygon", &sensor_placement_interface::startGSWithOffsetCallback, this);
   ss_clear_fa_vec_ = nh_.advertiseService("clear_forbidden_areas", &sensor_placement_interface::clearFAVecCallback, this);
   ss_clear_PoI_vec_ = nh_.advertiseService("clear_all_PoI", &sensor_placement_interface::clearPoIVecCallback, this);
-  ss_test_ = nh_.advertiseService("testService", &sensor_placement_interface::testServiceCallback, this);
   ss_cancel_action_ = nh_.advertiseService("cancel_action", &sensor_placement_interface::cancelGoalCallBack, this);
 
   ROS_INFO("Waiting for action server to start.");
@@ -137,24 +136,13 @@ bool sensor_placement_interface::clearFAVecCallback(std_srvs::Empty::Request& re
   return true;
 }
 
-
-bool sensor_placement_interface::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
-{
-  ROS_INFO("testService call received");
-  // send goal
-  seneka_sensor_placement::sensorPlacementGoal goal;
-  goal.service_id = 6;
-  ac_.sendGoal(goal);
-  return true;
-}
-
 // callback function for clearing all points of interest
 bool sensor_placement_interface::clearPoIVecCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
   ROS_INFO("'clear_all_PoI' service call received");
   // send goal
   seneka_sensor_placement::sensorPlacementGoal goal;
-  goal.service_id = 7;
+  goal.service_id = 6;
   ac_.sendGoal(goal);
   return true;
 }
