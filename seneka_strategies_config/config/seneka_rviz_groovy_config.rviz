@@ -66,6 +66,8 @@ Visualization Manager:
       Name: SensorFoVs
       Namespaces:
         camera0: true
+        camera1: true
+        camera2: true
         camera3: true
         camera4: true
       Queue Size: 100
@@ -133,8 +135,8 @@ Visualization Manager:
       Scale: 5.85939
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 216.891
-      Y: 73.2798
+      X: 207.973
+      Y: 93.0202
     Saved: ~
 Window Geometry:
   Displays:

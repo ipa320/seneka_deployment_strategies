@@ -86,7 +86,6 @@ public:
   geometry_msgs::PolygonStamped AoI_poly_;
   geometry_msgs::PolygonStamped PoI_poly_;
   std::vector< geometry_msgs::PolygonStamped > FA_poly_vec_;
-  //geometry_msgs::Point32 PoI_;
 
   // Services to trigger Publishing
   ros::ServiceServer ss_AoI_;
@@ -131,10 +130,6 @@ public:
       dummy_polygon.header.frame_id = "/map";
       FA_poly_vec_.push_back(dummy_polygon);
     }
-
-    //PoI_.x = 100;
-    //PoI_.y = 100;
-    //PoI_.z = 0;
 
     // Service Initializations
     ss_AoI_ = nh_.advertiseService("publish_AoI", &NodeClass::srvCB_AoI, this);

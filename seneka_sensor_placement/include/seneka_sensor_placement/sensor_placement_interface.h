@@ -84,7 +84,6 @@ class sensor_placement_interface
   ros::ServiceServer ss_start_GS_with_offset_;
   ros::ServiceServer ss_clear_fa_vec_;
   ros::ServiceServer ss_clear_PoI_vec_;
-  ros::ServiceServer ss_test_;
   ros::ServiceServer ss_cancel_action_;
 
   /* ------------------------------------------- */
@@ -108,9 +107,6 @@ class sensor_placement_interface
 
   // callback function for clearing all points of interest
   bool clearPoIVecCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
-
-  // callback function for the test service
-  bool testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
   // callback function for the cancelling active service
   bool cancelGoalCallBack(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);

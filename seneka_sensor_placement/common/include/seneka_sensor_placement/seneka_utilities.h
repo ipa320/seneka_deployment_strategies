@@ -85,18 +85,18 @@ namespace seneka_utilities
     // the area of interest (-1 == outside, 0 == on perimeter, 1 == inside)
     int8_t potential_target;
 
-    // holds if the target lies within the forbidden area --
+    // holds if the target lies within the forbidden area
     bool forbidden;
 
     // holds the priority of the target.
     // NOTE: "mutable" is used because in updateTargetsInfoRaytracing() function, priority info is changed to zero
-    // and restored to its original value later at end of the function. To allow this TEMPORARY change, mutable is
+    // and restored to its original value later at the end of that function. To allow this TEMPORARY change, mutable is
     // needed. Note that outside of updateTargetsInfoRaytracing()function, the priortiy still holds its original value!
     // Further detail: Reason for this temporary change is that a ray should pass through a target only once.
-    // But this is not true. And when multple rays pass through one target, the priority of that target is incorrectly
+    // But this is not what actually happens. Multple rays can pass through one target, thus the priority of that target is incorrectly
     // precieved to be more than it actually is. Therefore, to avoid this problem, the priority is forced to zero
-    // as soon as first ray hits the target. And then, it is restored when all rays have been checked. Hence, this
-    // change of priority is temporary and is not apparent outside of the updateTargetsInfoRaytracing() function.
+    // as soon as first ray hits the target. And then, priority is restored when all rays have been checked. Hence, mutable is helpful here.
+    // Nevertheless, change of priority is temporary and is not apparent outside of the updateTargetsInfoRaytracing() function.
     mutable int priority;
   };
 

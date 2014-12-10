@@ -53,7 +53,6 @@
 // standard constructor
 particle::particle()
 {
-
   // initialize number of sensors
   sensor_num_ = 0;
 
@@ -702,126 +701,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
   calcCoverage();
 }
 
-// function to update the targets_with_info variable
-// old version
-void particle::updateTargetsInfo(size_t sensor_index)
-{
-  // initialize workspace
-  geometry_msgs::Pose sensor_pose = sensors_.at(sensor_index).getSensorPose();
-
-  double sensor_range = sensors_.at(sensor_index).getRange();
-
-  std::vector<double> open_ang = sensors_.at(sensor_index).getOpenAngles();
-
-  double delta = open_ang.front();
-
-  double alpha = tf::getYaw(sensor_pose.orientation);
-
-  double help_angle = 0;
-
-  double x_min = mapToWorldX(0, *pMap_);
-  double x_max = mapToWorldX(pMap_->info.width, *pMap_);
-  double y_min = mapToWorldY(0, *pMap_);
-  double y_max = mapToWorldY(pMap_->info.height, *pMap_);
-
-  // initialize index variables
-  uint32_t top_index;
-  uint32_t left_index;
-  uint32_t bottom_index;
-  uint32_t right_index;
-
-  // initialize sensor_kite to approximate the sensors' FOV
-  geometry_msgs::Polygon sensor_kite;
-
-  // initialize new point for sensor_kite
-  geometry_msgs::Point32 p;
-
-  p.z = 0;
-
-  p.x = std::max(x_min, std::min(x_max, sensor_pose.position.x));
-  p.y = std::max(y_min, std::min(y_max, sensor_pose.position.y));
-
-  sensor_kite.points.push_back(p);
-
-  help_angle = alpha - std::min(PI/2, 0.5 * delta);
-
-  if(fabs(help_angle) > PI)
-    help_angle = help_angle + (-2) * signum(help_angle) * PI;
-
-  p.x = std::max(x_min, std::min(x_max, sensor_pose.position.x + cos(help_angle)*sensor_range));
-  p.y = std::max(y_min, std::min(y_max, sensor_pose.position.y + sin(help_angle)*sensor_range));
-
-  sensor_kite.points.push_back(p);
-
-  help_angle = alpha;
-
-  if(fabs(help_angle) > PI)
-    help_angle = help_angle + (-2) * signum(help_angle) * PI;
-
-  p.x = std::max(x_min, std::min(x_max, sensor_pose.position.x + cos(help_angle)*sensor_range));
-  p.y = std::max(y_min, std::min(y_max, sensor_pose.position.y + sin(help_angle)*sensor_range));
-
-  sensor_kite.points.push_back(p);
-
-  help_angle = alpha + std::min(PI/2, 0.5 * delta);
-
-  if(fabs(help_angle) > PI)
-    help_angle = help_angle + (-2) * signum(help_angle) * PI;
-
-  p.x = std::max(x_min, std::min(x_max, sensor_pose.position.x + cos(help_angle)*sensor_range));
-  p.y = std::max(y_min, std::min(y_max, sensor_pose.position.y + sin(help_angle)*sensor_range));
-
-  sensor_kite.points.push_back(p);
-
-  // get bounding box around the sensors' FOV
-  geometry_msgs::Polygon bounding_box = getBoundingBox2D(sensor_kite, *pMap_);
-
-  // go through bounding box and update only the targets_with_info within
-
-  // first point of polygon contains x_min and y_min, 3rd contains x_max and y_max
-  worldToMap2D(bounding_box.points.at(0), *pMap_, left_index, top_index);
-  worldToMap2D(bounding_box.points.at(2), *pMap_, right_index, bottom_index);
-
-  for(uint32_t y = top_index; y < bottom_index; y++ )
-  {
-    for (uint32_t x = left_index; x < right_index; x++)
-    {
-
-      // now check every potential target in the sensors' bounding box
-      if(pTargets_with_info_fix_->at(y * pMap_->info.width + x).potential_target == 1)
-      {
-        // now we found a target
-        if(!pTargets_with_info_fix_->at(y * pMap_->info.width + x).occupied)
-        {
-          // now we found a non-occupied target, so check the coverage
-          if(checkCoverage(sensors_.at(sensor_index), pTargets_with_info_fix_->at(y * pMap_->info.width + x).world_pos))
-          {
-            // now we found a non-occupied target covered by the given sensor
-            targets_with_info_var_.at(y * pMap_->info.width + x).covered_by_sensor.at(sensor_index) = true;
-
-            if(!targets_with_info_var_.at(y * pMap_->info.width + x).covered)
-            {
-              // now the given target is covered by at least one sensor
-              targets_with_info_var_.at(y * pMap_->info.width + x).covered = true;
-              // increment the covered targets counter only if the given target is not covered by another sensor yet
-              covered_targets_num_++;
-            }
-            else
-            {
-              if(!targets_with_info_var_.at(y * pMap_->info.width + x).multiple_covered)
-                multiple_coverage_++;
-
-              // now the given target is covered by multiple sensors
-              targets_with_info_var_.at(y * pMap_->info.width + x).multiple_covered = true;
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-//function to update the targets_with_info variable with raytracing (lookup table); with option to lock some specific targets so that their info is not resetted in resetTargetsWithInfo() function
+//function to update the targets_with_info variable with raytracing (lookup table); with option to "lock" all targets (with var info) that are being covered. "lock" means preventing target_info_var::reset() function to be called on that target
 void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_targets)
 {
   //clear vector of ray end points
@@ -911,7 +791,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index, bool lock_target
               priority_sum_ = priority_sum_ + pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority;
 
               //once priority is added, make it 0 and save it for later restoration
-              //NOTE: beware that this will cause incorrect behaviour if getCoverageRayTracing() is run on multiple threads.
+              //beware that this will cause incorrect behaviour if getCoverageRayTracing() is run on multiple threads.
               poi_list.push_back(cell_in_vector_coordinates);
               priority_value_list.push_back(pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority);
               pTargets_with_info_fix_->at(cell_in_vector_coordinates).priority = 0;

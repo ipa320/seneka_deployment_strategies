@@ -192,7 +192,6 @@ public:
 
   // function to set the variable information for all targets
   void setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var, int priority_sum = 0);
-//  void setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var);
 
   // function to reset the variable information for all targets and also reset priority_sum_ if requested
   void resetTargetsWithInfoVar();
@@ -232,9 +231,6 @@ public:
 
   // function to update particle during PSO
   void updateParticle(std::vector<geometry_msgs::Pose> global_best, double PSO_param_1, double PSO_param_2, double PSO_param_3);
-
-  // function to update the targets_with_info variable
-  void updateTargetsInfo(size_t sensor_index);
 
   //function to update the targets_with_info variable with raytracing (lookup table); with option to lock some specific targets so that their info is not resetted in resetTargetsWithInfo() function
   void updateTargetsInfoRaytracing(size_t sensor_index, bool lock_targets = false);
